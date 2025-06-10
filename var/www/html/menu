@@ -1,0 +1,25 @@
+#!ipxe
+
+:menu-install
+menu Linux repair cafe boot options
+item mint-live      Run mint live (no install)
+item mint-install   Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
+item
+choose selected && goto ${selected} || void
+
+:mint-live
+echo Starting Mint Live
+set server_ip 192.168.3.1
+set nfs_path /srv/nfs/mint
+kernel nfs://${server_ip}${nfs_path}/casper/vmlinuz || read void
+initrd nfs://${server_ip}${nfs_path}/casper/initrd.gz || read void
+imgargs vmlinuz initrd=initrd.lz root=/dev/nfs boot=casper netboot=nfs nfsroot=${server_ip}:${nfs_path} ip=dhcp -- || read void
+boot || read void
+
+:mint-install
+set server_ip 192.168.3.1
+set nfs_path /srv/nfs/mint
+kernel nfs://${server_ip}${nfs_path}/casper/vmlinuz || read void
+initrd nfs://${server_ip}${nfs_path}/casper/initrd.gz || read void
+imgargs vmlinuz initrd=initrd.lz root=/dev/nfs file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper netboot=nfs nfsroot=${server_ip}:${nfs_path} ip=dhcp -- auto noprompt automatic-ubiquity || read void
+boot || read void
