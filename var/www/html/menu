@@ -1,25 +1,63 @@
 #!ipxe
 
+:start
+set server_ip __IP__
+set mint_path /srv/nfs/mint
+set mint_args root=/dev/nfs boot=casper netboot=nfs nfsroot=${server_ip}:${mint_path} ip=dhcp  username=live_user hostname=linux-repair-cafe systemd.default_device_timeout_sec=5
+
+set mint_kernel nfs://${server_ip}${mint_path}/casper/vmlinuz
+set mint_initrd nfs://${server_ip}${mint_path}/casper/initrd.gz
+
 :menu-install
 menu Linux repair cafe boot options
-item mint-live      Run mint live (no install)
-item mint-install   Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
+item --key l mint-live        Start Linux Mint 22.1 Cinnamon 64-bit
+item --key c mint-live_compat Start Linux Mint 22.1 Cinnamon 64-bit (compatibility mode)
+item --key i mint-install     Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
 item
+item shell                Drop to iPXE shell
+item reboot               Reboot computer
+item --key x exit         Exit iPXE and continue BIOS boot
 choose selected && goto ${selected} || void
 
+
 :mint-live
-echo Starting Mint Live
-set server_ip 192.168.3.1
-set nfs_path /srv/nfs/mint
-kernel nfs://${server_ip}${nfs_path}/casper/vmlinuz || read void
-initrd nfs://${server_ip}${nfs_path}/casper/initrd.gz || read void
-imgargs vmlinuz initrd=initrd.lz root=/dev/nfs boot=casper netboot=nfs nfsroot=${server_ip}:${nfs_path} ip=dhcp -- || read void
-boot || read void
+echo Start Linux Mint 22.1 Cinnamon 64-bit
+kernel ${mint_kernel}
+initrd ${mint_initrd}
+imgargs vmlinuz ${mint_args} quiet splash --
+boot
+
+:mint-live_compat
+echo Start Linux Mint 22.1 Cinnamon 64-bit (compatibility mode)
+kernel ${mint_kernel}
+initrd ${mint_initrd}
+imgargs vmlinuz ${mint_args} noapic noacpi nosplash irqpoll nomodeset --
+boot
 
 :mint-install
-set server_ip 192.168.3.1
-set nfs_path /srv/nfs/mint
-kernel nfs://${server_ip}${nfs_path}/casper/vmlinuz || read void
-initrd nfs://${server_ip}${nfs_path}/casper/initrd.gz || read void
-imgargs vmlinuz initrd=initrd.lz root=/dev/nfs file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper netboot=nfs nfsroot=${server_ip}:${nfs_path} ip=dhcp -- auto noprompt automatic-ubiquity || read void
-boot || read void
+echo Install Linux Mint 22.1 Cinnamon 64-bit
+kernel ${mint_kernel}
+initrd ${mint_initrd}
+imgargs vmlinuz ${mint_args} -- file=/cdrom/preseed/seed/linuxmint_custom.seed auto noprompt automatic-ubiquity
+boot
+
+:shell
+echo Type 'exit' to get the back to the menu
+shell
+set menu-timeout 0
+set submenu-timeout 0
+goto start
+
+:failed
+echo Booting failed, dropping to shell
+goto shell
+
+:reboot
+reboot
+
+:exit
+exit
+
+:config
+config
+goto start
