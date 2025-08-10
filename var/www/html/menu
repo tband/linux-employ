@@ -10,8 +10,8 @@ set mint_initrd nfs://${server_ip}${mint_path}/casper/initrd.gz
 
 :menu-install
 menu Linux repair cafe boot options
-item --key l mint-live        Start Linux Mint 22.1 Cinnamon 64-bit
-item --key c mint-live_compat Start Linux Mint 22.1 Cinnamon 64-bit (compatibility mode)
+item --key l mint-live        Start __DESCRIPTION__
+item --key c mint-live_compat Start __DESCRIPTION__ (compatibility mode)
 item --key i mint-install     Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
 item
 item shell                Drop to iPXE shell
@@ -21,21 +21,21 @@ choose selected && goto ${selected} || void
 
 
 :mint-live
-echo Start Linux Mint 22.1 Cinnamon 64-bit
+echo Start __DESCRIPTION__
 kernel ${mint_kernel}
 initrd ${mint_initrd}
 imgargs vmlinuz ${mint_args} quiet splash --
 boot
 
 :mint-live_compat
-echo Start Linux Mint 22.1 Cinnamon 64-bit (compatibility mode)
+echo Start __DESCRIPTION__ (compatibility mode)
 kernel ${mint_kernel}
 initrd ${mint_initrd}
 imgargs vmlinuz ${mint_args} noapic noacpi nosplash irqpoll nomodeset --
 boot
 
 :mint-install
-echo Install Linux Mint 22.1 Cinnamon 64-bit
+echo Install __DESCRIPTION__
 kernel ${mint_kernel}
 initrd ${mint_initrd}
 imgargs vmlinuz ${mint_args} -- file=/cdrom/preseed/seed/linuxmint_custom.seed auto noprompt automatic-ubiquity
