@@ -15,7 +15,7 @@ If only a few computers need to be installed, creating a bootable USB stick is e
    wget -O linuxmint-repair-2025-08-05.md5 https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025-08-05.md5/download
    md5sum -c linuxmint-repair-2025-08-05.md5
          linuxmint-repair-2025-08-05.iso: OK
-   sudo ./install.sh -i <path_to_iso>
+   sudo ./install.sh -i linuxmint-repair-2025-08-05.iso
 ```
 
 The ethernet device on a laptop is normally not used unless you plug in a cable. More likely you use a wireless interface. The script uses your ethernet port for the wired network. Connect the ethernet port to a switch with sufficient ports and connect the client computers to this switch. Finally network boot the clients and you should be greeted by the PXE boot menu.
