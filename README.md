@@ -1,5 +1,5 @@
 # linux-employ
-This script is for employing (or should I say deploying..) Linux. It's part of the Dutch [Linux Repair Cafe](https://www.repaircafe.org/linux-repair-cafe/) initiative where interested users are supported to give their laptop a second life by installing Linux. The main goal is prevent e-waste.
+This script is for employing (or should I say deploying..) Linux. It's part of the Dutch [Linux Repair Cafe](https://www.repaircafe.org/linux-repair-cafe/) initiative where interested users are supported to give their laptop a second life by installing Linux. The main goal is to prevent e-waste.
 
 This project creates a server for decentralized installation using network boot (IPXE). As the Repair Cafe locations not always have internet access the image to install has already been created and is available on the server. The image itself can be downloaded here : https://sourceforge.net/projects/linux-iso/files<br/>
 If only a few computers need to be installed, creating a bootable USB stick is easier. If the amount of installations is larger, a centralized server is more convient.
@@ -11,21 +11,23 @@ If only a few computers need to be installed, creating a bootable USB stick is e
 ```
    git clone https://github.com/tband/linux-employ.git 
    cd linux-employ/
-   wget https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025-08-05.iso/download
-   mv download linuxmint-repair-2025-08-05.iso
-   wget https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025-08-05.md5/download
-   mv download linuxmint-repair-2025-08-05.md5
+   wget -O linuxmint-repair-2025-08-05.iso https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025-08-05.iso/download
+   wget -O linuxmint-repair-2025-08-05.md5 https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025-08-05.md5/download
+   md5sum -c linuxmint-repair-2025-08-05.md5
+         linuxmint-repair-2025-08-05.iso: OK
    sudo ./install.sh -i <path_to_iso>
 ```
 
-The ethernet device on a laptop is normally not used unless you plug in a cable. More likely you use a wireless interface. The script uses your ethernet port for the wired network.
+The ethernet device on a laptop is normally not used unless you plug in a cable. More likely you use a wireless interface. The script uses your ethernet port for the wired network. Connect the ethernet port to a switch with sufficient ports and connect the client computers to this switch. Finally network boot the clients and you should be greeted by the PXE boot menu.
 ## iPXE Boot menu
 This script is prepared for a Live ISO of Mint (which is supplied with the -i argument). It can be downloaded from https://sourceforge.net/projects/linux-iso/files/ <br/>
 You can also download from https://www.linuxmint.com/download.php but that will not contain the preseeded installer questions.
 After installation you can customize the boot menu at /var/www/html/menu to add you own boot options.
+<img width="716" height="395" alt="image" src="https://github.com/user-attachments/assets/a6e7441b-237c-4adb-91e2-2eb7c7fe14ca" />
+
 ## Overview of setup
 A DHCP server is setup to deliver an IP address in the range (192.168.5.150 192.168.5.200). The server address is 192.168.5.1. The client computer uses PXE to boot from the network. This needs so be enabled in the BIOS or sometimes by pressing a key like F12.<br/>
-The DHCP server lets the client boot a more advanced IPXE bootloader (TFTP)<br/>
+The DHCP server lets the client boot a more advanced IPXE bootloader by TFTP<br/>
 The IPXE bootloader shows a menu to the client. This menu comes from http://192.168.5.1/menu.<br/>
 The client chooses an entry from the list.<br/>
 The chosen entry is loaded from an NFS share (nfs:/srv/mnt) which the client mounts as /cdrom. As far as the client is concerned, it's a local CDROM boot.
