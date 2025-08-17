@@ -25,4 +25,4 @@ ufw enable
 ufw default deny incoming
 
 # Next boot will show OEM user configuration
-oem-config-prepare
+oem-config-prepare --quiet
