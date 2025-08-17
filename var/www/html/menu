@@ -6,7 +6,7 @@ set mint_path /srv/nfs/mint
 set mint_args root=/dev/nfs boot=casper netboot=nfs nfsroot=${server_ip}:${mint_path} ip=dhcp  username=live_user hostname=linux-repair-cafe systemd.default_device_timeout_sec=5
 
 set mint_kernel nfs://${server_ip}${mint_path}/casper/vmlinuz
-set mint_initrd nfs://${server_ip}${mint_path}/casper/initrd.gz
+set mint_initrd nfs://${server_ip}${mint_path}__INITRD__
 
 :menu-install
 menu Linux repair cafe boot options
@@ -24,14 +24,14 @@ choose selected && goto ${selected} || void
 echo Start __DESCRIPTION__
 kernel ${mint_kernel}
 initrd ${mint_initrd}
-imgargs vmlinuz ${mint_args} quiet splash --
+imgargs vmlinuz ${mint_args} quiet splash
 boot
 
 :mint-live_compat
 echo Start __DESCRIPTION__ (compatibility mode)
 kernel ${mint_kernel}
 initrd ${mint_initrd}
-imgargs vmlinuz ${mint_args} noapic noacpi nosplash irqpoll nomodeset --
+imgargs vmlinuz ${mint_args} noapic noacpi nosplash irqpoll nomodeset
 boot
 
 :mint-install
