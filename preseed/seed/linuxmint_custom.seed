@@ -11,6 +11,7 @@ ubiquity ubiquity/success_command string \
     in-target find /etc/skel -type f -exec chmod 644 {} \; ; \
     cp -r /cdrom/preseed/pkgs /target/etc; \
     cp /cdrom/preseed/scripts/post_install.sh /target/etc/pkgs/; \
+    cp /cdrom/preseed/etc/apt/sources.list.d/official-package-repositories.list /target/etc/apt/sources.list.d/official-package-repositories.list
     chmod +x /target/etc/pkgs/post_install.sh; \
     in-target /etc/pkgs/post_install.sh; \
     in-target rm /etc/pkgs/post_install.sh
@@ -56,9 +57,9 @@ d-i clock-setup/ntp boolean true
 d-i clock-setup/ntp-server string time.server.com
 
 ## APT mirror settings
-#d-i apt-setup/use_mirror boolean true
-#d-i mirror/country string NL
-#d-i mirror/http/mirror select mirrors.evoluso.com
+d-i apt-setup/use_mirror boolean true
+d-i mirror/country string NL
+d-i mirror/http/mirror select ftp.snt.utwente.nl/pub/os/linux/ubuntu
 #d-i mirror/http/proxy string
 
 ### NETWORK ###################################################################
