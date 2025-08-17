@@ -112,6 +112,7 @@ function source_iso_rw () {
     mkdir -p /mnt/iso
     mount -o loop,ro $ISO /mnt/iso
     rsync -ai --delete /mnt/iso/ /srv/nfs/mint/
+    cp -pr preseed /srv/nfs/mint/
 }
 
 if [[ ! -z $CUBIC  && -d "$CUBIC" ]] then
