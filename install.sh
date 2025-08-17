@@ -10,46 +10,118 @@ adapters=$(nmcli device|awk '/ethernet/ {print $1}')
 DEVICE=$(echo "$adapters"|tail -1)
 # The IP address of the network
 IPADDRESS=192.168.5.1
-NET=${IPADDRESS%\.*} # 192.168.5
 # If you want to edit the iso, like adding preseed data, change this to y
 RW_MOUNT=n
+
+function install_cubic () {
+  apt-add-repository universe
+  apt-add-repository ppa:cubic-wizard/release
+  apt update
+  apt install --no-install-recommends cubic
+}
 
 # Parse command-line options
 prog_name=$(basename $0)
 help="
-${prog_name} [-icdnwhH]
-  -i  <file>   distro.iso (default $ISO)
-  -c <comment> What text to put in the iPXE menu, default $COMMENT
-  -d  <eth>    device
-  -n  <ip>     Server IP addres (default $IPADDRESS)
-  -w           Make the /srv/nfs mount writable. The iso will be unpacked instead of mounted
-  -h           This help
+${prog_name} [--iso <ISO> --comment <COMMENT> --device <DEVICE> --ip <IPADDRESS> --rw --help]
+  -i|--iso     <file> distro.iso
+  --rw         Make the /srv/nfs mount writable. The iso will be unpacked
+               instead of mounted
+  --cubic <project directory>
+                Instead of an iso use the project directory from which cubic
+                makes a custom iso. This allows to edit the preseed files
+                without recreating the iso
+  -c|--comment <text> What text to put in the iPXE menu, default $COMMENT
+  -d|--device  <eth>  device to use if there are more than one
+  --ip         <ip>   Server IP addres (default $IPADDRESS)
+  --h|-h       This help
 
-Configure a Linux system to become a IPXE server for ISO installation on clients
-All arguments are optinal, but you want at least to specify the iso location
+Configure a Linux system to become a IPXE server for Linux installation on
+clients. All arguments are optinal, but you want at least to specify the iso
+location or the Cubic project directory.
   
 Example:
   sudo ./${prog_name} -d $DEVICE -i $ISO -c \"Linux Mint\"
 "
 
-while getopts i:c:d:whH opt
-do
-  case $opt in
-    i)ISO=$OPTARG;;
-    c)COMMENT=$OPTARG;;
-    d)DEVICE=$OPTARG;DEVICE_OK=t;;
-    n)IPADDRESS=$OPTARG;;
-    w)RW_MOUNT=y;;
-  h|H)echo "$help";exit 1;;
-    *)echo "$help";exit 1;;
+#!/bin/bash
+
+# Define help message
+#help="Usage: script.sh --iso <ISO> --comment <COMMENT> --device <DEVICE> --ip <IPADDRESS> --rw --help"
+
+# Parse long options
+OPTIONS=$(getopt -o i:c:d:n:whH --long iso:,cubic:,install_cubic,device:,ip:,rw,help -- "$@")
+eval set -- "$OPTIONS"
+
+# Initialize variables
+#ISO=""
+#COMMENT=""
+#DEVICE=""
+DEVICE_OK=""
+#IPADDRESS=""
+#RW_MOUNT=""
+
+while true; do
+  case "$1" in
+    -i|--iso) ISO="$2"; shift 2;;
+    --cubic)CUBIC="$2"; shift 2;;
+    --install_cubic)install_cubic; exit 0;;
+    -c|--comment) COMMENT="$2"; shift 2;;
+    -d|--device) DEVICE="$2"; DEVICE_OK="t"; shift 2;;
+    -n|--ip) IPADDRESS="$2"; shift 2;;
+    -w|--rw) RW_MOUNT="y"; shift;;
+    -h|--help) echo "$help"; exit 1;;
+    --) shift; break;;
+    *) echo "$help"; exit 1;;
   esac
 done
 
-ISO=$(readlink -f $ISO)
-if [[ ! -r $ISO ]] then
-  echo -e "ERROR: cannot read $ISO, use -i argument"
-  exit 1
+function remove_mint_mount () {
+    umount -l /srv/nfs/mint 2>/dev/null
+    mkdir -p /srv/nfs/mint
+    sed -i '/\/srv\/nfs/d' /etc/fstab
+}
+
+function source_cubic () {
+    # Remove existing mount point from previous install
+    remove_mint_mount
+    echo "${CUBIC}/custom-disk   /srv/nfs/mint      auto  bind,ro    0  0" >> /etc/fstab
+    # nfs installer uid is most likely not these same as the uid running Cubic, so make all files world readable.
+    # I've seen this go wrong with casper/vmlinux having permission 600 after Cubic updates it.
+    # This also means after Cubic image creation, you have to manually open up the files by giving this command:
+    find ${CUBIC}/custom-disk/ ! -perm /o=r -exec chmod o+r \{} \;
+}
+
+function check_iso () {
+  if [[ ! -r $ISO ]] then
+    echo -e "ERROR: cannot read $ISO, use -i argument"
+    exit 1
+  fi
+}
+function source_iso_ro () {
+    check_iso
+    # Remove existing mount point from previous install
+    remove_mint_mount
+    echo "$ISO   /srv/nfs/mint      auto  x-systemd.requires=/,ro    0  0" >> /etc/fstab
+}
+
+function source_iso_rw () {
+    check_iso
+    remove_mint_mount
+    # One time mount to copy data
+    mkdir -p /mnt/iso
+    mount -o loop,ro $ISO /mnt/iso
+    rsync -ai --delete /mnt/iso/ /srv/nfs/mint/
+}
+
+if [[ ! -z $CUBIC  && -d "$CUBIC" ]] then
+  if [[ -r $ISO ]] then
+    echo -e "ERROR: Either specify an ISO or a CUBIC project folder, not both"
+    exit 1
+  fi
 fi
+
+ISO=$(readlink -f $ISO)
 
 CNT=$(echo $adapters|wc -w)
 if [[ -z $DEVICE_OK && $CNT -gt 1 ]]
@@ -66,6 +138,8 @@ then
   esac
 fi
 
+# update the repo first
+apt update
 # install packages
 apt install -y isc-dhcp-server tftpd-hpa apache2 nfs-kernel-server bridge-utils
 # optionally
@@ -80,6 +154,7 @@ ufw disable
 #ufw allow 4011/udp
 
 # dhcpd config
+NET=${IPADDRESS%\.*} # 192.168.5
 [ -r /etc/dhcp/dhcpd.conf.org ] || mv /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf.org
 sed "s/__NET__/${NET}/g" etc/dhcp/dhcpd.conf > /etc/dhcp/dhcpd.conf
 #[ -r /etc/default/isc-dhcp-server.org ] || mv /etc/default/isc-dhcp-server /etc/default/isc-dhcp-server.org
@@ -101,9 +176,6 @@ nmcli con up br0
 #nmcli con up if_server
 
 #httpd server config
-[ -r /var/www/html/demo_index.html ] || mv /var/www/html/index.html /var/www/html/demo_index.html
-sed "s/__IP__/${IPADDRESS}/g" var/www/html/menu  > /var/www/html/menu
-sed -i "s/__DESCRIPTION__/${COMMENT}/g" /var/www/html/menu
 
 # tftp config is ok, just add the data
 # see also https://ipxe.org/howto/chainloading
@@ -115,20 +187,25 @@ cp srv/tftp/undionly.kpxe srv/tftp/ipxe.efi /srv/tftp/
 mkdir -p /srv/nfs
 grep -E "^/srv/nfs"      /etc/exports >/dev/null || cp etc/exports /etc/exports
 
-if [[ -n "$ISO" ]] then
-  mkdir -p /srv/nfs/mint
-  # One time mount to copy data
-  #mkdir /mnt/iso
-  if [[ "$RW_MOUNT" == "y" ]]; then
-    mkdir -p /mnt/iso
-    mount -o loop,ro $ISO /mnt/iso
-    rsync -ai /mnt/iso/ /srv/nfs/mint/
+function make_menu () {
+  # First determine the init ramdisk file name as Cubic changes the extention depending on the compression used (lz/gz)
+  INITRD=/casper/initrd.lz
+  INITRD=$(awk '/initrd/ {print $2;exit}' /srv/nfs/mint/boot/grub/grub.cfg)
+  [ -r /var/www/html/demo_index.html ] || mv /var/www/html/index.html /var/www/html/demo_index.html
+  sed "s/__IP__/${IPADDRESS}/g" var/www/html/menu  > /var/www/html/menu
+  sed -i "s/__DESCRIPTION__/${COMMENT}/g" /var/www/html/menu
+  sed -i "s%__INITRD__%${INITRD}%g" /var/www/html/menu
+}
+
+# what kind of source?
+if [ -r $ISO ]; then
+  if [ "$RW_MOUNT" == "y" ]; then
+    source_iso_rw
   else
-    # Remove existing mount point from previous install
-    sed -i '/\/srv\/nfs/d' /etc/fstab
-    echo "$ISO   /srv/nfs/mint      auto  x-systemd.requires=/,ro    0  0" >> /etc/fstab
-    grep -E "^/srv/nfs/mint" /etc/exports >/dev/null || echo "/srv/nfs/mint *(rw,sync,no_subtree_check)"                 >> /etc/exports
+    source_iso_ro
   fi
+elif [ -d "$CUBIC" ]; then
+  source_cubic
 fi
 
 # Restart the services
@@ -137,3 +214,7 @@ systemctl daemon-reload
 systemctl disable isc-dhcp-server6.service
 systemctl restart isc-dhcp-server.service
 systemctl restart nfs-server
+mount -a
+
+# Create IPXE menu
+make_menu
