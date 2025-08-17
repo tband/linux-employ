@@ -1,5 +1,5 @@
 #!/bin/bash
-
+VERSION=1.0
 # ISO is the image locally available
 ISO=$PWD/linux_repair.iso
 COMMENT="Linux repair iso"
@@ -24,17 +24,18 @@ function install_cubic () {
 prog_name=$(basename $0)
 help="
 ${prog_name} [--iso <ISO> --comment <COMMENT> --device <DEVICE> --ip <IPADDRESS> --rw --help]
-  -i|--iso     <file> distro.iso
-  --rw         Make the /srv/nfs mount writable. The iso will be unpacked
-               instead of mounted
+  --iso,-i      <file> distro.iso
+  --rw          Make the /srv/nfs mount writable. The iso will be unpacked
+                instead of mounted
   --cubic <project directory>
                 Instead of an iso use the project directory from which cubic
                 makes a custom iso. This allows to edit the preseed files
                 without recreating the iso
-  -c|--comment <text> What text to put in the iPXE menu, default $COMMENT
-  -d|--device  <eth>  device to use if there are more than one
-  --ip         <ip>   Server IP addres (default $IPADDRESS)
-  --h|-h       This help
+  -c, --comment <text> What text to put in the iPXE menu, default $COMMENT
+  --device,-d   <eth>  device to use if there are more than one
+  --nat         setup nat to this device. Internet from this device (Wifi adapter) is shared
+  --ip          <ip>   Server IP addres (default $IPADDRESS)
+  --h,-h        This help
 
 Configure a Linux system to become a IPXE server for Linux installation on
 clients. All arguments are optinal, but you want at least to specify the iso
@@ -50,16 +51,12 @@ Example:
 #help="Usage: script.sh --iso <ISO> --comment <COMMENT> --device <DEVICE> --ip <IPADDRESS> --rw --help"
 
 # Parse long options
-OPTIONS=$(getopt -o i:c:d:n:whH --long iso:,cubic:,install_cubic,device:,ip:,rw,help -- "$@")
+OPTIONS=$(getopt -o i:c:d:n:wvhH --long iso:,cubic:,install_cubic,device:,nat:,ip:,rw,version,help -- "$@")
 eval set -- "$OPTIONS"
 
 # Initialize variables
-#ISO=""
-#COMMENT=""
-#DEVICE=""
 DEVICE_OK=""
-#IPADDRESS=""
-#RW_MOUNT=""
+NAT_DEVICE=""
 
 while true; do
   case "$1" in
@@ -68,8 +65,10 @@ while true; do
     --install_cubic)install_cubic; exit 0;;
     -c|--comment) COMMENT="$2"; shift 2;;
     -d|--device) DEVICE="$2"; DEVICE_OK="t"; shift 2;;
+    --nat) NAT_DEVICE="$2"; shift 2;;
     -n|--ip) IPADDRESS="$2"; shift 2;;
     -w|--rw) RW_MOUNT="y"; shift;;
+    -v|--version)echo Linux-employ version $VERSION; exit 0;;
     -h|--help) echo "$help"; exit 1;;
     --) shift; break;;
     *) echo "$help"; exit 1;;
@@ -112,7 +111,7 @@ function source_iso_rw () {
     mkdir -p /mnt/iso
     mount -o loop,ro $ISO /mnt/iso
     rsync -ai --delete /mnt/iso/ /srv/nfs/mint/
-    cp -pr preseed /srv/nfs/mint/
+    rsync -ai --delete preseed /srv/nfs/mint/
 }
 
 if [[ ! -z $CUBIC  && -d "$CUBIC" ]] then
@@ -144,15 +143,7 @@ apt update
 # install packages
 apt install -y isc-dhcp-server tftpd-hpa apache2 nfs-kernel-server bridge-utils
 # optionally
-apt install -y openssh-server iptables net-tools vim
-# Disable the Firewall as NFS, SSH, TFTP and HTTP, DHCP all will be served
-ufw disable
-#Todo figure out all ports that are needed
-#ufw allow 22/tcp
-#ufw allow 80/tcp
-#ufw allow 67/udp
-#ufw allow 69/udp
-#ufw allow 4011/udp
+apt install -y openssh-server iptables iptables-persistent net-tools vim
 
 # dhcpd config
 NET=${IPADDRESS%\.*} # 192.168.5
@@ -172,6 +163,36 @@ nmcli con modify br0 ipv4.addr "${IPADDRESS}/24" ipv4.method manual
 nmcli c add con-name br0-slave type bridge-slave ifname ${DEVICE} master br0
 nmcli con up br0
 
+function enable_nat () {
+  DEV_PUBLIC=$1
+  DEV_LAN=$2
+  # Your public interface is ${DEV_PUBLIC} and local interface is ${DEV_LAN}
+
+  #1- Enable forwarding on the box
+  sysctl -w net.ipv4.ip_forward=1
+  sed -i "s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g" /etc/sysctl.conf
+
+  #2- Set natting the natting rule (symmetic NAT):
+  iptables -t nat -A POSTROUTING -o ${DEV_PUBLIC} -j MASQUERADE --random
+
+  #3- Accept traffic from ${DEV_LAN}:
+  iptables -A INPUT -i ${DEV_LAN} -j ACCEPT
+
+  #4- Allow established connections from the public interface.
+  iptables -A INPUT -i ${DEV_PUBLIC} -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+  #5- Allow outgoing connections:
+  iptables -A OUTPUT -j ACCEPT
+}
+
+if [ ! -z $NAT_DEVICE ]; then
+  netfilter-persistent flush
+  enable_nat $NAT_DEVICE $DEVICE
+  netfilter-persistent save
+else
+  sed -i "s/net.ipv4.ip_forward=1/#net.ipv4.ip_forward=1/g" /etc/sysctl.conf
+  netfilter-persistent flush
+fi
 #nmcli con delete if_server 2>/dev/null
 #nmcli con add con-name if_server type ethernet ifname ${DEVICE} ipv4.method manual ipv4.address ${IPADDRESS}/24
 #nmcli con up if_server
