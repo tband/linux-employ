@@ -1,0 +1,7 @@
+deb https://ftp.nluug.nl/os/Linux/distr/linuxmint/packages zara main upstream import backport 
+
+deb http://ftp.nluug.nl/os/Linux/distr/ubuntu noble main restricted universe multiverse
+deb http://ftp.nluug.nl/os/Linux/distr/ubuntu noble-updates main restricted universe multiverse
+deb http://ftp.nluug.nl/os/Linux/distr/ubuntu noble-backports main restricted universe multiverse
+
+deb http://security.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
