@@ -10,8 +10,6 @@ done
 
 # Packages to be removed, one per line. Wildcards allowed
 TOBEREMOVED="
-libreoffice-base-core
-libreoffice-l10n-en-gb
 "
 for pkg in $TOBEREMOVED
 do
