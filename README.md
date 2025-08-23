@@ -22,7 +22,7 @@ Apart from installation the server also let's you quickly boot into a Live CD wi
 The ethernet device on a laptop is normally not used unless you plug in a cable. More likely you use a wireless interface. The script uses your ethernet port for the wired network. Connect the ethernet port to a switch with sufficient ports and connect the client computers to this switch. Finally network boot the clients and you should be greeted by the PXE boot menu.
 ## iPXE Boot menu
 This script is prepared for a Live ISO of Mint (which is supplied with the -i argument). It can be downloaded from https://sourceforge.net/projects/linux-iso/files/ <br/>
-You can also download from https://www.linuxmint.com/download.php but in that case the OEM install will not contain preseeded answers to the installer questions. The --rw option makes the ISO writable by first unpacking it and then adding all preseed data. The result is similar to using the ISO from sourceforge.net/projects/linux-iso/files, expect that this version has already received a recent package update. The vanilla Mint images have slightly outdated packages that will be updated when the user boots the first time (at home).
+You can also download from https://www.linuxmint.com/download.php but in that case the OEM install will not contain preseeded answers to the installer questions. The --rw option makes the ISO writable by first unpacking it and then adding all preseed data. The result is similar to using the ISO from sourceforge.net/projects/linux-iso/files, except that this version has already received a recent package update. The vanilla Mint images have slightly outdated packages that will be updated when the user boots the first time (at home).
 After installation you can customize the boot menu at /var/www/html/menu to add you own boot options.
 <img width="716" height="395" alt="image" src="https://github.com/user-attachments/assets/a6e7441b-237c-4adb-91e2-2eb7c7fe14ca" />
 
@@ -67,7 +67,7 @@ If you want to have multiple isos available, you have to put the content of each
 Both will work but EFI boot tends to be a bit slower.
 ## Internet access
 The 192.168.5.1/24 network does not provide internet. 
-This is done such that the Mint installation speeds up. This setup is indeal for repair cafes that do not have unlimited free internet access.<br/>
+This is done such that the Mint installation speeds up. This setup is suited for repair cafes that do not have unlimited free internet access.<br/>
 There is one exception and that is http://191.168.1.5 .<br/>
 You can store a copy of a website under /var/www/html to create a working site at 
 for instance "http://191.168.1.5/Linux_Repair_Café_geeft_laptops_een_langer_leven.html"
