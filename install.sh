@@ -31,11 +31,14 @@ ${prog_name} [--iso <ISO> --comment <COMMENT> --device <DEVICE> --ip <IPADDRESS>
                 Instead of an iso use the project directory from which cubic
                 makes a custom iso. This allows to edit the preseed files
                 without recreating the iso
+  --install_cubic
+                Install Cubic according to the instructions on the Cubic github page: (https://github.com/PJ-Singh-001/Cubic)
   -c, --comment <text> What text to put in the iPXE menu, default $COMMENT
   --device,-d   <eth>  device to use if there are more than one
-  --nat         setup nat to this device. Internet from this device (Wifi adapter) is shared
-  --ip          <ip>   Server IP addres (default $IPADDRESS)
-  --h,-h        This help
+  --nat,        setup nat to this device. Internet from this device (Wifi adapter) is shared
+  --ip,-n <ip>
+                Server IP addres (default $IPADDRESS)
+  --help,-h     This help
 
 Configure a Linux system to become a IPXE server for Linux installation on
 clients. All arguments are optinal, but you want at least to specify the iso
