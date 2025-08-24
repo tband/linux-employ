@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=1.0.1
+VERSION=1.0.2
 # ISO is the image locally available
 COMMENT="Linux repair iso"
 # The interface that is connected to the PXE network. For a laptop this it the ethernet adapter
