@@ -11,7 +11,7 @@ ubiquity ubiquity/success_command string \
     in-target find /etc/skel -type f -exec chmod 644 {} \; ; \
     cp -r /cdrom/preseed/pkgs /target/etc; \
     cp /cdrom/preseed/scripts/post_install.sh /target/etc/pkgs/; \
-    cp /cdrom/preseed/etc/apt/sources.list.d/official-package-repositories.list /target/etc/apt/sources.list.d/official-package-repositories.list
+    cp /cdrom/preseed/etc/apt/sources.list.d/official-package-repositories.list /target/etc/apt/sources.list.d/official-package-repositories.list; \
     chmod +x /target/etc/pkgs/post_install.sh; \
     in-target /etc/pkgs/post_install.sh; \
     in-target rm /etc/pkgs/post_install.sh
