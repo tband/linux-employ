@@ -21,11 +21,17 @@ To get started, follow these steps:
    ```bash
    git clone https://github.com/tband/linux-employ.git 
    cd linux-employ/
-   wget -O linuxmint-repair-2025.08.28.iso https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025.08.28.iso/download
-   wget -O linuxmint-repair-2025.08.28.md5 https://sourceforge.net/projects/linux-iso/files/linuxmint-repair-2025.08.28.md5/download
-   md5sum -c linuxmint-repair-2025.08.28.md5
-     #  linuxmint-repair-2025.08.28.iso: OK
-   sudo ./install.sh --iso linuxmint-repair-2025.08.28.iso
+   wget https://ftp.nluug.nl/os/Linux/distr/linuxmint/iso/stable/22.2/linuxmint-22.2-cinnamon-64bit.iso
+   wget https://mirrors.kernel.org/linuxmint/stable/22.2/sha256sum.txt
+   shasum -c sha256sum.txt
+     #  linuxmint-22.2-cinnamon-64bit.iso: OK
+   ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso --chroot
+     # linuxmint-22.2-cinnamon-64bit_preseeded.iso has been created
+     # A bootable USB disk can be made like this:
+     # sudo dd if=linuxmint-22.2-cinnamon-64bit.iso of=/dev/sd<X> bs=4M status=progress
+     #
+     # install the server 
+   sudo ./install.sh --iso linuxmint-22.2-cinnamon-64bit_preseeded.iso
 
  3. **Network Setup**:
     - Connect the Ethernet port to a switch with enough ports.
@@ -34,8 +40,7 @@ To get started, follow these steps:
 
 
 ## iPXE Boot menu
-The iPXE boot menu is prepared for a Live ISO of Mint. It can be downloaded from [SourceForge](https://sourceforge.net/projects/linux-iso/files/) or
-[Linux Mint](https://www.linuxmint.com/download.php). Note that using the latter does not include preseeded answers. 
+The iPXE boot menu is prepared for a Live ISO of Mint.
 
 - The `--rw` option makes the ISO writable, and preseed data will be added (in case the ISO is not preseeded)
 - After installation, customize the boot menu at /var/www/html/menu
@@ -51,10 +56,27 @@ The chosen entry is loaded from an NFS share (nfs:/srv/mnt) which the client mou
 If the "Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten" menu item is chosen, the preseed questions are loaded from /srv/nfs/mint/preseed/seed/linuxmint_custom.seed (/cdrom/preseed/seed/linuxmint_custom.seed) and installation proceeds without having to answer any question.
 ### commandline help
 ```
+$ ./make_iso.sh  -h
+
+make_iso.sh
+  -i      <file> input.iso
+  -o      <file> output.iso
+  --chroot This option gives a root shell in the ISO to make modifications. Things you can
+           do is adding, removing packages with apt-get. Note this part will run with sudo.
+  --help,-h     This help
+
+Create a new ISO with preseed embedded
+Examples:
+  ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso
+
+```
+
+```
 $ ./install.sh -h
 
 install.sh
   --iso,-i      <file> distro.iso
+  --iso32       <file> distro32.iso (for the 32 bit PXE menu)
   --rw          Make the /srv/nfs mount writable. The iso will be unpacked
                 instead of mounted
   --cubic <project directory>
@@ -67,7 +89,7 @@ install.sh
   -c, --comment <text>
                 What text to put in the iPXE menu, default "Linux repair iso"
   --device,-d <eth>
-                device to use if there are more than one
+                ethernet device to use if there are more than one
   --nat <device>
                 setup nat to this device. Clients will have internet from this device
                 (Wifi adapter). Only set this up if you indeed have internet!
@@ -83,7 +105,7 @@ clients. Most arguments are optional, but you need at least to specify the iso
 location or the Cubic project directory.
   
 Examples:
-  sudo ./install.sh -d vboxnet0 -i linuxmint.iso -c "Linux Mint"
+  sudo ./install.sh -d enp2s0 -i linuxmint.iso -c "Linux Mint"
   sudo ./install.sh -nat wlp2s0
   sudo ./install.sh -nonat
 
