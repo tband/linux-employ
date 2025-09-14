@@ -8,17 +8,34 @@ set mint_args root=/dev/nfs boot=casper netboot=nfs nfsroot=${server_ip}:${mint_
 set mint_kernel nfs://${server_ip}${mint_path}/casper/vmlinuz
 set mint_initrd nfs://${server_ip}${mint_path}__INITRD__
 
+set mint_path32 /srv/nfs/mint32
+set mint_args32 root=/dev/nfs boot=casper netboot=nfs nfsroot=${server_ip}:${mint_path32} ip=dhcp  username=live_user hostname=linux-repair-cafe boot=live live-config initrd=/casper/initrd.lz live-media-path=/casper
+set mint_kernel32 nfs://${server_ip}${mint_path32}/casper/vmlinuz
+set mint_initrd32 nfs://${server_ip}${mint_path32}/casper/initrd.lz
+
 :menu-install
 menu Linux repair cafe boot options
 item --key l mint-live        Start __DESCRIPTION__
-item --key c mint-live_compat Start __DESCRIPTION__ (compatibility mode)
+item         mint-live_compat Start __DESCRIPTION__ (compatibility mode)
 item --key i mint-install     Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
+item
+item menu-install32 32-bit (old computers)
+item
+item         netboot.xyz      netboot.xyz (need internet)
 item
 item shell                Drop to iPXE shell
 item reboot               Reboot computer
 item --key x exit         Exit iPXE and continue BIOS boot
 choose selected && goto ${selected} || void
 
+:menu-install32
+menu Linux repair cafe boot options 32-bit
+item --key l mint-live32        Start __DESCRIPTION__
+item --key c mint-live_compat32 Start __DESCRIPTION__ (compatibility mode)
+item --key i mint-install32     Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
+item
+item  back Back
+choose selected && goto ${selected} || void
 
 :mint-live
 echo Start __DESCRIPTION__
@@ -26,6 +43,14 @@ kernel ${mint_kernel}
 initrd ${mint_initrd}
 imgargs vmlinuz ${mint_args} quiet splash
 boot
+
+:mint-live32
+echo Start Linux repair iso 32 bit
+kernel ${mint_kernel32}
+initrd ${mint_initrd32}
+imgargs vmlinuz ${mint_args32} quiet splash
+boot
+
 
 :mint-live_compat
 echo Start __DESCRIPTION__ (compatibility mode)
@@ -40,6 +65,17 @@ kernel ${mint_kernel}
 initrd ${mint_initrd}
 imgargs vmlinuz ${mint_args} -- file=/cdrom/preseed/seed/linuxmint_custom.seed auto noprompt automatic-ubiquity
 boot
+
+:mint-install32
+echo Install __DESCRIPTION__
+kernel ${mint_kernel32}
+initrd ${mint_initrd32}
+imgargs vmlinuz ${mint_args32} -- file=/cdrom/preseed/seed/linuxmint_custom.seed auto noprompt automatic-ubiquity
+boot
+
+:netboot.xyz
+echo Netboot.xyz
+chain --autofree http://boot.netboot.xyz/ipxe/netboot.xyz.lkrn
 
 :shell
 echo Type 'exit' to get the back to the menu
@@ -61,3 +97,9 @@ exit
 :config
 config
 goto start
+
+:back
+set submenu-timeout 0
+clear submenu-default
+goto start
+
