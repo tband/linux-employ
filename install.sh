@@ -1,5 +1,5 @@
-#!/bin/bash
-VERSION=1.0.2
+#!/usr/bin/env bash
+VERSION=1.1.0
 # ISO is the image locally available
 COMMENT="Linux repair iso"
 # The interface that is connected to the PXE network. For a laptop this it the ethernet adapter
@@ -18,6 +18,7 @@ prog_name=$(basename $0)
 help="
 ${prog_name}
   --iso,-i      <file> distro.iso
+  --iso32       <file> distro32.iso (for the 32 bit PXE menu)
   --rw          Make the /srv/nfs mount writable. The iso will be unpacked
                 instead of mounted
   --cubic <project directory>
@@ -30,7 +31,7 @@ ${prog_name}
   -c, --comment <text>
                 What text to put in the iPXE menu, default \"$COMMENT\"
   --device,-d <eth>
-                device to use if there are more than one
+                ethernet device to use if there are more than one
   --nat <device>
                 setup nat to this device. Clients will have internet from this device
                 (Wifi adapter). Only set this up if you indeed have internet!
@@ -42,7 +43,7 @@ ${prog_name}
   --help,-h     This help
 
 Configure a Linux system to become a IPXE server for Linux installation on
-clients. Most arguments are optinal, but you need at least to specify the iso
+clients. Most arguments are optional, but you need at least to specify the iso
 location or the Cubic project directory.
   
 Examples:
@@ -56,7 +57,7 @@ if [ $# == 0 ]; then
   exit 1
 fi
 # Parse long options
-OPTIONS=$(getopt -o i:c:d:n:wvhH --long iso:,cubic:,install_cubic,device:,nat:,nonatt,ip:,rw,version,check,help -- "$@")
+OPTIONS=$(getopt -o i:c:d:n:wvhH --long iso:,iso32:,cubic:,install_cubic,device:,nat:,nonatt,ip:,rw,version,check,help -- "$@")
 
 # Check if getopt returned an error
 if [ $? -ne 0 ]; then
@@ -80,10 +81,12 @@ function check_services () {
 # Initialize variables
 DEVICE_OK=""
 NAT_DEVICE=""
+ISO32=""
 
 while true; do
   case "$1" in
     -i|--iso) ISO="$2"; shift 2;;
+    --iso32) ISO32="$2"; shift 2;;
     --cubic)CUBIC="$2"; shift 2;;
     --install_cubic)install_cubic; exit 0;;
     -c|--comment) COMMENT="$2"; shift 2;;
@@ -103,7 +106,7 @@ done
 function remove_mint_mount () {
     umount -l /srv/nfs/mint 2>/dev/null
     mkdir -p /srv/nfs/mint
-    sed -i '/\/srv\/nfs/d' /etc/fstab
+    sed -i '/\/srv\/nfs\/mint/d' /etc/fstab
 }
 
 function source_cubic () {
@@ -127,6 +130,18 @@ function source_iso_ro () {
     # Remove existing mount point from previous install
     remove_mint_mount
     echo "$ISO   /srv/nfs/mint      auto  x-systemd.requires=/,ro    0  0" >> /etc/fstab
+}
+
+function source_iso_ro32 () {
+    if [[ ! -r $ISO32 ]] then
+      echo -e "ERROR: cannot read $ISO32"
+      exit 1
+    fi
+    # Remove existing mount point from previous install
+    umount -l /srv/nfs/mint32 2>/dev/null
+    mkdir -p /srv/nfs/mint32
+    sed -i '/\/srv\/nfs\/mint32/d' /etc/fstab
+    echo "$ISO32   /srv/nfs/mint32    auto  x-systemd.requires=/,ro    0  0" >> /etc/fstab
 }
 
 function source_iso_rw () {
@@ -198,6 +213,13 @@ function enable_nat () {
   #5- Allow outgoing connections:
   iptables -A OUTPUT -j ACCEPT
 }
+
+
+if [ ! -z $ISO32 ]
+then
+  ISO32=$(readlink -f $ISO32)
+  source_iso_ro32
+fi
 
 ISO=$(readlink -f $ISO)
 if [[ ! -z $CUBIC  && -d "$CUBIC" ]] then
