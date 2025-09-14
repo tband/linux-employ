@@ -57,7 +57,7 @@ if [ $# == 0 ]; then
   exit 1
 fi
 # Parse long options
-OPTIONS=$(getopt -o i:c:d:n:wvhH --long iso:,iso32:,cubic:,install_cubic,device:,nat:,nonatt,ip:,rw,version,check,help -- "$@")
+OPTIONS=$(getopt -o i:c:d:n:wvhH --long iso:,iso32:,cubic:,install_cubic,comment:,device:,nat:,nonatt,ip:,rw,version,check,help -- "$@")
 
 # Check if getopt returned an error
 if [ $? -ne 0 ]; then
