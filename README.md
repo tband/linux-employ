@@ -28,7 +28,7 @@ To get started, follow these steps:
    ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso --chroot
      # linuxmint-22.2-cinnamon-64bit_preseeded.iso has been created
      # A bootable USB disk can be made like this:
-     # sudo dd if=linuxmint-22.2-cinnamon-64bit.iso of=/dev/sd<X> bs=4M status=progress
+     # sudo dd if=linuxmint-22.2-cinnamon-64bit_preseeded.iso of=/dev/sd<X> bs=4M status=progress
      #
      # install the server 
    sudo ./install.sh --iso linuxmint-22.2-cinnamon-64bit_preseeded.iso
@@ -45,7 +45,7 @@ The iPXE boot menu is prepared for a Live ISO of Mint.
 - The `--rw` option makes the ISO writable, and preseed data will be added (in case the ISO is not preseeded)
 - After installation, customize the boot menu at /var/www/html/menu
 
-<img width="716" height="395" alt="image" src="https://github.com/user-attachments/assets/a6e7441b-237c-4adb-91e2-2eb7c7fe14ca" />
+<img width="716" height="393" alt="image" src="https://github.com/user-attachments/assets/f71b35d7-f888-4ce6-a781-b7daf4e78493" />
 
 ## Setup overview
 A DHCP server is setup to deliver an IP address in the range (192.168.5.150 192.168.5.200). The server address is 192.168.5.1. The client computer uses PXE to boot from the network. This needs so be enabled in the BIOS or sometimes by pressing a key like F12.<br/>
@@ -113,6 +113,10 @@ Examples:
 
 ## Update
 To update the ISO, download a new one and repeat the installation. For multiple ISOs, place each in a separate folder under `/srv/nfs` (e.g., `/srv/nfs/mint` and `/srv/nfs/ubuntu`) and edit the iPXE menu at `/var/www/html/menu`.
+The iPXE menu already has an entry for 32-bit Mint installation (lmde). The lmde ISO of Mint cannot be preseeded so it will always start as Live. To install:
+```
+sudo ./install.sh --iso32 lmde-6-cinnamon-32bit.iso
+```
 
 ## Boot Options: EFI vs. BIOS
 Both EFI and BIOS boot options are supported, but EFI boot tends to be a bit slower.
