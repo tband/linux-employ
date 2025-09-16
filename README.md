@@ -1,12 +1,14 @@
 # Linux Employ Project Overview
 
-The **Linux Employ** project is part of the Dutch [**Linux Repair Cafe**](https://www.repaircafe.org/linux-repair-cafe/) initiative, aimed at giving laptops a second life by installing Linux and preventing e-waste. This project sets up a server for centralized installation using network boot (iPXE), allowing users to install Linux even in locations without internet access.
+The **Linux Employ** project is part of the Dutch [**Linux Repair Cafe**](https://www.repaircafe.org/linux-repair-cafe/) initiative, aimed at giving laptops a second life by installing Linux and preventing e-waste. A script adds preseed data to an existing distribution ISO image to speed up the installation.
+The preseeded image can be flashed to an USB stick or served from a iPXE server for centralized installation.
 
 ### Key Features
+- **ISO generator**: Add preseed data and manage packages to be installed (add, remove or update)
 - **Centralized Installation Server**: Ideal for multiple installations, reducing the need for USB sticks.
 - **Live CD Boot**: Quickly boot into a Live CD without installation.
 - **Preseeded Installations**: Automate the installation process with preconfigured settings.
-- **No internet needed**": Image is stored on server
+- **No internet needed**: Image is stored on server
 
 ## Quick Start Guide
 
@@ -22,7 +24,7 @@ To get started, follow these steps:
    git clone https://github.com/tband/linux-employ.git 
    cd linux-employ/
    wget https://ftp.nluug.nl/os/Linux/distr/linuxmint/iso/stable/22.2/linuxmint-22.2-cinnamon-64bit.iso
-   wget https://mirrors.kernel.org/linuxmint/stable/22.2/sha256sum.txt
+   wget https://ftp.nluug.nl/os/Linux/distr/linuxmint/iso/stable/22.2/sha256sum.txt
    shasum -c sha256sum.txt
      #  linuxmint-22.2-cinnamon-64bit.iso: OK
    ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso --chroot
@@ -42,17 +44,16 @@ To get started, follow these steps:
 ## iPXE Boot menu
 The iPXE boot menu is prepared for a Live ISO of Mint.
 
-- The `--rw` option makes the ISO writable, and preseed data will be added (in case the ISO is not preseeded)
 - After installation, customize the boot menu at /var/www/html/menu
 
 <img width="716" height="393" alt="image" src="https://github.com/user-attachments/assets/f71b35d7-f888-4ce6-a781-b7daf4e78493" />
 
 ## Setup overview
 A DHCP server is setup to deliver an IP address in the range (192.168.5.150 192.168.5.200). The server address is 192.168.5.1. The client computer uses PXE to boot from the network. This needs so be enabled in the BIOS or sometimes by pressing a key like F12.<br/>
-The DHCP server lets the client boot a more advanced IPXE bootloader by TFTP<br/>
-The IPXE bootloader shows a menu to the client. This menu comes from http://192.168.5.1/menu.<br/>
+The DHCP server lets the client boot a more advanced iPXE bootloader using TFTP<br/>
+The iPXE bootloader shows a menu to the client. This menu address is http://192.168.5.1/menu.<br/>
 The client chooses an entry from the list.<br/>
-The chosen entry is loaded from an NFS share (nfs:/srv/mnt) which the client mounts as /cdrom. As far as the client computer is concerned, it's a local CDROM boot.<br/>
+The chosen entry is loaded from an NFS share (nfs:/srv/nfs) which the client mounts as /cdrom. As far as the client computer is concerned, it's a local CDROM boot.<br/>
 If the "Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten" menu item is chosen, the preseed questions are loaded from /srv/nfs/mint/preseed/seed/linuxmint_custom.seed (/cdrom/preseed/seed/linuxmint_custom.seed) and installation proceeds without having to answer any question.
 ### commandline help
 ```
@@ -121,8 +122,8 @@ sudo ./install.sh --iso32 lmde-6-cinnamon-32bit.iso
 ## Boot Options: EFI vs. BIOS
 Both EFI and BIOS boot options are supported, but EFI boot tends to be a bit slower.
 ## Internet access
-The 192.168.5.1/24 network does not provide internet. 
-This is done such that the Mint installation speeds up. This setup is suited for repair cafes that do not have unlimited free internet access.<br/>
+The 192.168.5.1/24 network does not provide internet unless specifically enabled.
+This is done such that the Mint installation can be done from repair cafe locations that do not have unlimited internet access.<br/>
 There is one exception and that is http://191.168.1.5 .<br/>
 You can store a copy of a website under /var/www/html to create a working site at 
 for instance "http://191.168.1.5/Linux_Repair_Café_geeft_laptops_een_langer_leven.html"
