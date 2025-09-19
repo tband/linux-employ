@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-VERSION=1.1.0
+# Add check for iso on encrypted home directory
+VERSION=1.1.1
 # ISO is the image locally available
 COMMENT="Linux repair iso"
 # The interface that is connected to the PXE network. For a laptop this it the ethernet adapter
@@ -176,7 +177,7 @@ function install_packages () {
   # update the repo first
   apt update
   # install packages
-  apt install -y isc-dhcp-server tftpd-hpa apache2 nfs-kernel-server bridge-utils
+  apt install -y isc-dhcp-server tftpd-hpa apache2 nfs-kernel-server bridge-utils libarchive-tools
   # optionally
   apt install -y openssh-server iptables iptables-persistent net-tools vim
 

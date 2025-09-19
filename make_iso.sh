@@ -53,7 +53,7 @@ ISO_IN_NAME=$(basename ${ISO_IN%.*})
 TMPFS_SIZE=$(df /dev/shm|awk '/tmpfs/ {print $4}')
 ISO_DIR=/tmp/iso
 # If more than 6G ava
-ISO_SIZE=$(stat --format=%s $ISO_IN)
+ISO_SIZE=$(stat -L --format=%s $ISO_IN)
 if [ ! -z $CHROOT ]
 then
     ISO_SIZE=$(($ISO_SIZE/2**10*33/10))
@@ -70,6 +70,10 @@ mkdir -p $ISO_DIR
 mkdir -p $ISO_FILES
 #cd $ISO_DIR
 #rtorrent https://www.linuxmint.com/torrents/linuxmint-22.2-cinnamon-64bit.iso.torrent
+if ! command -v bsdtar > /dev/null
+then
+  apt install libarchive-tools
+fi
 bsdtar -C $ISO_FILES --acls -xf $ISO_IN
 find $ISO_FILES -type f -exec chmod +w \{} \;
 find $ISO_FILES -type d -exec chmod +w \{} \;
@@ -79,14 +83,16 @@ unattendedOEM='label unattendedOEM
   kernel /casper/vmlinuz
   append  DEBCONF_DEBUG=5 file=/cdrom/preseed/seed/linuxmint_custom.seed oem-config/enable=true boot=casper initrd=/casper/initrd.gz -- auto noprompt automatic-ubiquity
 '
-awk -i inplace -vunattendedOEM="$unattendedOEM" '/label oem/ {print unattendedOEM} ; {print}' $ISO_FILES/isolinux/live.cfg
+awk -vunattendedOEM="$unattendedOEM" '/label oem/ {print unattendedOEM} ; {print}' $ISO_FILES/isolinux/live.cfg > $ISO_FILES/isolinux/live.cfg_new
+mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
 
 unattendedOEM='menuentry "Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten" --class linuxmint {
 	linux	/casper/vmlinuz file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper -- auto noprompt automatic-ubiquity
 	initrd	/casper/initrd.gz
 }
 '
-awk -i inplace -vunattendedOEM="$unattendedOEM" '/OEM install/ {print unattendedOEM} ; {print}' $ISO_FILES/boot/grub/grub.cfg
+awk -vunattendedOEM="$unattendedOEM" '/OEM install/ {print unattendedOEM} ; {print}' $ISO_FILES/boot/grub/grub.cfg > $ISO_FILES/boot/grub/grub.cfg_new
+mv $ISO_FILES/boot/grub/grub.cfg_new $ISO_FILES/boot/grub/grub.cfg
 #set|grep ISO_
 
 if [ ! -z $CHROOT ]
