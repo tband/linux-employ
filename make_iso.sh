@@ -133,9 +133,14 @@ then
   sudo mksquashfs $ISO_DIR/squashfs $ISO_FILES/casper/filesystem.squashfs
 fi
 
-genisoimage -U -r -v -T -J -joliet-long -V "$ISO_IN_NAME" -volset "$ISO_IN_NAME" -A "$ISO_IN_NAME" \
-  -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
-  -eltorito-alt-boot -eltorito-boot efi.img -no-emul-boot -o $ISO_OUT -quiet $ISO_FILES
+#genisoimage -U -r -v -T -J -joliet-long -V "$ISO_IN_NAME" -volset "$ISO_IN_NAME" -A "$ISO_IN_NAME" \
+#  -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
+#  -eltorito-alt-boot -eltorito-boot efi.img -no-emul-boot -o $ISO_OUT -quiet $ISO_FILES
+#isohybrid $ISO_FILES
+
+[ -r /usr/lib/ISOLINUX/isohdpfx.bin ] && ISOHDPFX=/usr/lib/ISOLINUX/isohdpfx.bin
+[ -r /usr/lib/syslinux/bios/isohdpfx.bin ] && ISOHDPFX=/usr/lib/syslinux/bios/isohdpfx.bin
+xorriso -as mkisofs -isohybrid-mbr $ISOHDPFX -c isolinux/boot.cat -b isolinux/isolinux.bin -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -isohybrid-gpt-basdat -o $ISO_OUT -quiet $ISO_FILES
 
 if [ ! -z $CHROOT ]
 then
@@ -144,6 +149,13 @@ else
   rm -rf $ISO_DIR
 fi
 
-echo "$ISO_OUT has been created"
 sha256sum $ISO_OUT > ${ISO_OUT%.*}.sha256sum
+echo "$ISO_OUT has been created"
 ls -l $ISO_OUT ${ISO_OUT%.*}.sha256sum
+
+echo
+echo "To make a bootable pendrive:"
+echo "list block devices and umount if auto mounted"
+echo " lsblk # (find <X>)"
+echo " sudo umount /dev/sd<X>"
+echo " dd if=$ISO_OUT of=/dev/sd<X> bs=4M status=progress;sync"
