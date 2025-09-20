@@ -50,6 +50,8 @@ if [[ -z $ISO_OUT ]] then
 fi
 
 ISO_IN_NAME=$(basename ${ISO_IN%.*})
+# iso name must be <= 32 characters
+ISO_IN_NAME=${ISO_IN_NAME:0:32}
 TMPFS_SIZE=$(df /dev/shm|awk '/tmpfs/ {print $4}')
 ISO_DIR=/tmp/iso
 # If more than 6G ava
@@ -78,22 +80,33 @@ bsdtar -C $ISO_FILES --acls -xf $ISO_IN
 find $ISO_FILES -type f -exec chmod +w \{} \;
 find $ISO_FILES -type d -exec chmod +w \{} \;
 cp -pr preseed/ $ISO_FILES/
-unattendedOEM='label unattendedOEM
+
+# Check if the Repar Cafe menu item has already been added and if not add them to isolinux and grub
+if ! grep -q "Repair Cafe" $ISO_FILES/boot/grub/grub.cfg
+then
+  INITRD=$(awk '/initrd/ {print $2;exit}' $ISO_FILES/boot/grub/grub.cfg)
+  # $ISO_FILES/boot/grub/grub.cfg
+  unattendedOEM="menuentry \"Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten\" --class linuxmint {
+	linux	/casper/vmlinuz file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper -- auto noprompt automatic-ubiquity
+	initrd	${INITRD}
+}
+"
+  awk -vunattendedOEM="$unattendedOEM" '/OEM install/ {print unattendedOEM} ; {print}' $ISO_FILES/boot/grub/grub.cfg > $ISO_FILES/boot/grub/grub.cfg_new
+  mv $ISO_FILES/boot/grub/grub.cfg_new $ISO_FILES/boot/grub/grub.cfg
+
+  #  $ISO_FILES/isolinux/live.cfg
+  unattendedOEM="label unattendedOEM
   menu label Repair Cafe OEM install, NO Questions - disk overwritten
   kernel /casper/vmlinuz
-  append  DEBCONF_DEBUG=5 file=/cdrom/preseed/seed/linuxmint_custom.seed oem-config/enable=true boot=casper initrd=/casper/initrd.gz -- auto noprompt automatic-ubiquity
-'
+  append  DEBCONF_DEBUG=5 file=/cdrom/preseed/seed/linuxmint_custom.seed oem-config/enable=true boot=casper initrd=/casper/initrd.lz -- auto noprompt automatic-ubiquity
+"
 awk -vunattendedOEM="$unattendedOEM" '/label oem/ {print unattendedOEM} ; {print}' $ISO_FILES/isolinux/live.cfg > $ISO_FILES/isolinux/live.cfg_new
 mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
 
-unattendedOEM='menuentry "Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten" --class linuxmint {
-	linux	/casper/vmlinuz file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper -- auto noprompt automatic-ubiquity
-	initrd	/casper/initrd.gz
-}
-'
-awk -vunattendedOEM="$unattendedOEM" '/OEM install/ {print unattendedOEM} ; {print}' $ISO_FILES/boot/grub/grub.cfg > $ISO_FILES/boot/grub/grub.cfg_new
-mv $ISO_FILES/boot/grub/grub.cfg_new $ISO_FILES/boot/grub/grub.cfg
-#set|grep ISO_
+  cp misc/splash.png $ISO_FILES/isolinux/
+fi
+
+#set|grep ISO_ ; exit
 
 if [ ! -z $CHROOT ]
 then
