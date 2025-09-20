@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Add check for iso on encrypted home directory
-VERSION=1.1.1
+VERSION=1.1.2
 # ISO is the image locally available
 COMMENT="Linux repair iso"
 # The interface that is connected to the PXE network. For a laptop this it the ethernet adapter
