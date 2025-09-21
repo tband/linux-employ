@@ -1,51 +1,62 @@
 #!/usr/bin/env bash
 # Parse command-line options
 prog_name=$(basename $0)
+VERSION=$(cat .version)
 # Define help message
 help="
 ${prog_name}
-  -i      <file> input.iso
-  -o      <file> output.iso
-  --chroot This option gives a root shell in the ISO to make modifications. Things you can
-           do is adding, removing packages with apt-get. Note this part will run with sudo.
-  --help,-h     This help
+  -i           <file> input.iso
+  -o           <file> output.iso
+  --update,-u  Update the packages.
+  --chroot,-c  This option gives a root shell in the ISO to make modifications. Things you can
+               do is adding, removing packages with apt-get.
+  --version,-v Show version
+  --help,-h    This help
 
 Create a new ISO with preseed embedded
 Examples:
-  ./${prog_name} -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso
+  ./${prog_name} -i linuxmint.iso -o linuxmint_preseeded.iso
+  ./${prog_name} -i linuxmint.iso -o linuxmint_updated.iso --update
 "
 
 # Parse long options
-OPTIONS=$(getopt -o i:o:hH --long chroot -- "$@")
+OPTIONS=$(getopt -o i:o:cudvhH --long chroot,update,version,debug -- "$@")
 
 # Check if getopt returned an error
 if [ $? -ne 0 ]; then
-    echo "Error: Invalid options." >&2
+    echo "$help" >&2
     exit 1
 fi
 eval set -- "$OPTIONS"
 
 # Initialize variables
-unset CHROOT
+unset UNSQUASH CHROOT DEBUG UPDATE
 while true; do
   case "$1" in
     -i) ISO_IN="$2"; shift 2;;
     -o) ISO_OUT="$2"; shift 2;;
     -h|--help) echo "$help"; exit 1;;
-    --chroot) CHROOT=1; shift 1;;
+    -c|--chroot) UNSQUASH=1; CHROOT=1;shift 1;;
+    -u|--update) UNSQUASH=1; UPDATE=1;shift 1;;
+    -v|--version)echo Linux-employ version $VERSION; exit 0;;
+    -d|--debug) DEBUG=1;shift 1;;
     --) shift; break;;
     *) echo "$help"; exit 1;;
   esac
 done
 
+# All commands available?
+command -v xorriso > /dev/null || sudo apt-get -y install xorriso isolinux
+command -v bsdtar  > /dev/null || sudo apt-get -y install libarchive-tools
+
 if [[ ! -r $ISO_IN ]] then
-  echo -e "ERROR: cannot read $ISO_IN, use -i argument"
+  echo -e "ERROR: cannot read $ISO_IN from -i argument"
   exit 1
 fi
 
 if [[ -z $ISO_OUT ]] then
-  echo -e "ISO OUT leeg"
   ISO_OUT=${ISO_IN%.*}_modified.iso
+  echo -e "Output ISO=$ISO_OUT"
   ISO_OUT=$(basename $ISO_OUT)
 fi
 
@@ -56,9 +67,9 @@ TMPFS_SIZE=$(df /dev/shm|awk '/tmpfs/ {print $4}')
 ISO_DIR=/tmp/iso
 # If more than 6G ava
 ISO_SIZE=$(stat -L --format=%s $ISO_IN)
-if [ ! -z $CHROOT ]
+if [ ! -z $UNSQUASH ]
 then
-    ISO_SIZE=$(($ISO_SIZE/2**10*33/10))
+    ISO_SIZE=$(($ISO_SIZE/2**10*40/10))
 else
     ISO_SIZE=$(($ISO_SIZE/2**10*11/10))
 fi
@@ -68,14 +79,13 @@ then
 fi
 
 ISO_FILES=$ISO_DIR/$ISO_IN_NAME
+
+# print command when in debug
+[ -z $DEBUG ] || set -x
+
 mkdir -p $ISO_DIR
 mkdir -p $ISO_FILES
-#cd $ISO_DIR
-#rtorrent https://www.linuxmint.com/torrents/linuxmint-22.2-cinnamon-64bit.iso.torrent
-if ! command -v bsdtar > /dev/null
-then
-  apt install libarchive-tools
-fi
+
 bsdtar -C $ISO_FILES --acls -xf $ISO_IN
 find $ISO_FILES -type f -exec chmod +w \{} \;
 find $ISO_FILES -type d -exec chmod +w \{} \;
@@ -106,9 +116,8 @@ mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
   cp misc/splash.png $ISO_FILES/isolinux/
 fi
 
-#set|grep ISO_ ; exit
 
-if [ ! -z $CHROOT ]
+if [ ! -z $UNSQUASH ]
 then
   # and extra unmount just to be sure :-)
   sudo umount $ISO_DIR/squashfs/dev/ $ISO_DIR/squashfs/proc/ 2>/dev/null
@@ -116,37 +125,61 @@ then
   sudo unsquashfs -d $ISO_DIR/squashfs $ISO_FILES/casper/filesystem.squashfs
   sudo mount -o bind /dev/ $ISO_DIR/squashfs/dev/
   sudo mount -o bind /proc/ $ISO_DIR/squashfs/proc/
+  sudo mv $ISO_DIR/squashfs/etc/resolv.conf $ISO_DIR/squashfs/etc/resolv.conf.org
   sudo cp -L /etc/resolv.conf $ISO_DIR/squashfs/etc/
-  sudo cp $ISO_FILES/preseed/etc/apt/sources.list.d/official-package-repositories.list \
+  sudo cp preseed/etc/apt/sources.list.d/official-package-repositories.list \
           $ISO_DIR/squashfs/etc/apt/sources.list.d/official-package-repositories.list
-  sudo cp $ISO_FILES/preseed/scripts/chroot.sh $ISO_DIR/squashfs/tmp
-  sudo chroot $ISO_DIR/squashfs /tmp/chroot.sh
-  echo ""
-  echo "Entering chroot environment of $ISO_IN_NAME"
-  echo "Please make modification as needed and continue with 'exit'"
-  sudo chroot $ISO_DIR/squashfs
-  sudo rm $ISO_DIR/squashfs/etc/resolv.conf
+  if [ ! -z $UPDATE ]
+  then
+    sudo cp preseed/scripts/update.sh $ISO_DIR/squashfs/tmp
+    sudo chroot $ISO_DIR/squashfs /tmp/update.sh
+  fi
+  if [ ! -z $CHROOT ]
+  then
+    echo ""
+    echo "Entering chroot environment of $ISO_IN_NAME"
+    echo "Please make modification as needed and continue with 'exit'"
+    sudo chroot $ISO_DIR/squashfs
+  fi
+  sudo mv $ISO_DIR/squashfs/etc/resolv.conf.org $ISO_DIR/squashfs/etc/resolv.conf
   sudo umount $ISO_DIR/squashfs/dev/ $ISO_DIR/squashfs/proc/
 
   sudo rm $ISO_FILES/casper/filesystem.squashfs
-  # this take 90s seconds on a 8 core i7-4790K 4GHz CPU
-  sudo mksquashfs $ISO_DIR/squashfs $ISO_FILES/casper/filesystem.squashfs
+  # this takes 90s seconds on a 8 core i7-4790K 4GHz CPU
+  sudo mksquashfs $ISO_DIR/squashfs $ISO_FILES/casper/filesystem.squashfs -quiet -comp gzip
 fi
 
-#genisoimage -U -r -v -T -J -joliet-long -V "$ISO_IN_NAME" -volset "$ISO_IN_NAME" -A "$ISO_IN_NAME" \
-#  -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
-#  -eltorito-alt-boot -eltorito-boot efi.img -no-emul-boot -o $ISO_OUT -quiet $ISO_FILES
-#isohybrid $ISO_FILES
 
-[ -r /usr/lib/ISOLINUX/isohdpfx.bin ] && ISOHDPFX=/usr/lib/ISOLINUX/isohdpfx.bin
-[ -r /usr/lib/syslinux/bios/isohdpfx.bin ] && ISOHDPFX=/usr/lib/syslinux/bios/isohdpfx.bin
-xorriso -as mkisofs -isohybrid-mbr $ISOHDPFX -c isolinux/boot.cat -b isolinux/isolinux.bin -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -isohybrid-gpt-basdat -o $ISO_OUT -quiet $ISO_FILES
+if [ ! -z $DEBUG ]; then
+  set|grep ISO_ ;
+  exit
+fi
 
-if [ ! -z $CHROOT ]
+# I can't get UEFI boot with dd to work
+if false;then
+  mkisofs -U -r -v -T -J -joliet-long -V "$ISO_IN_NAME" -volset "$ISO_IN_NAME" -A "$ISO_IN_NAME" -p "linux-employ"\
+  -input-charset iso8859-1 \
+  -eltorito-boot isolinux/isolinux.bin -eltorito-catalog isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \
+  -eltorito-alt-boot -eltorito-platform 0xEF -eltorito-boot boot/grub/efi.img -no-emul-boot \
+  -o $ISO_OUT -quiet $ISO_FILES
+  isohybrid --uefi $ISO_OUT
+fi
+
+if true;then
+  [ -r /usr/lib/ISOLINUX/isohdpfx.bin ] && ISOHDPFX=/usr/lib/ISOLINUX/isohdpfx.bin
+  [ -r /usr/lib/syslinux/bios/isohdpfx.bin ] && ISOHDPFX=/usr/lib/syslinux/bios/isohdpfx.bin
+  [ -z $ISOHDPFX ] && echo "ERROR: Cannot find isohdpfx.bin" && exit 1
+  xorriso -as mkisofs -isohybrid-mbr $ISOHDPFX -c isolinux/boot.cat -b isolinux/isolinux.bin -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -isohybrid-gpt-basdat -o $ISO_OUT -quiet $ISO_FILES
+fi
+
+if [ -z $DEBUG ]
 then
-  sudo rm -rf $ISO_DIR
-else
-  rm -rf $ISO_DIR
+  if [ ! -z $UNSQUASH ]
+  then
+    sudo rm -rf $ISO_DIR
+  else
+    rm -rf $ISO_DIR
+  fi
 fi
 
 sha256sum $ISO_OUT > ${ISO_OUT%.*}.sha256sum
@@ -157,5 +190,5 @@ echo
 echo "To make a bootable pendrive:"
 echo "list block devices and umount if auto mounted"
 echo " lsblk # (find <X>)"
-echo " sudo umount /dev/sd<X>"
-echo " dd if=$ISO_OUT of=/dev/sd<X> bs=4M status=progress;sync"
+echo " sudo umount /dev/sd<X> or /dev/sd1<X>"
+echo " sudo dd if=$ISO_OUT of=/dev/sd<X> oflag=direct bs=4M status=progress"
