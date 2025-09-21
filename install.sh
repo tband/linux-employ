@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Add check for iso on encrypted home directory
-VERSION=1.1.2
+# TODO Add check for iso on encrypted home directory
+
+VERSION=$(cat .version)
 # ISO is the image locally available
 COMMENT="Linux repair iso"
 # The interface that is connected to the PXE network. For a laptop this it the ethernet adapter
@@ -62,7 +63,7 @@ OPTIONS=$(getopt -o i:c:d:n:wvhH --long iso:,iso32:,cubic:,install_cubic,comment
 
 # Check if getopt returned an error
 if [ $? -ne 0 ]; then
-    echo "Error: Invalid options." >&2
+    echo "$help" >&2
     exit 1
 fi
 eval set -- "$OPTIONS"
@@ -128,6 +129,7 @@ function check_iso () {
 }
 function source_iso_ro () {
     check_iso
+    df  $ISO|grep -q Private && echo "$ISO is stored on encrypted filesystem, cannot loop mount!" && exit 1
     # Remove existing mount point from previous install
     remove_mint_mount
     echo "$ISO   /srv/nfs/mint      auto  x-systemd.requires=/,ro    0  0" >> /etc/fstab
@@ -175,7 +177,7 @@ function check_adapters () {
 
 function install_packages () {
   # update the repo first
-  apt update
+  apt-get update
   # install packages
   apt install -y isc-dhcp-server tftpd-hpa apache2 nfs-kernel-server bridge-utils libarchive-tools
   # optionally
