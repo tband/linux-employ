@@ -27,12 +27,15 @@ To get started, follow these steps:
    wget https://ftp.nluug.nl/os/Linux/distr/linuxmint/iso/stable/22.2/sha256sum.txt
    shasum -c sha256sum.txt
      #  linuxmint-22.2-cinnamon-64bit.iso: OK
-   ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso --chroot
+   ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso --update
      # linuxmint-22.2-cinnamon-64bit_preseeded.iso has been created
-     # A bootable USB disk can be made like this:
-     # sudo dd if=linuxmint-22.2-cinnamon-64bit_preseeded.iso of=/dev/sd<X> bs=4M status=progress
      #
-     # install the server 
+     # A bootable USB disk can be made like this:
+     # list block devices and umount if auto mounted
+     # lsblk # (find <X>)
+     # sudo umount /dev/sd<X> or /dev/sd1<X>
+     # sudo dd if=linuxmint-22.2-cinnamon-64bit_preseeded.iso of=/dev/sd<X> oflag=direct bs=4M status=progress
+# install the server 
    sudo ./install.sh --iso linuxmint-22.2-cinnamon-64bit_preseeded.iso
 
  3. **Network Setup**:
@@ -60,16 +63,18 @@ If the "Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten" menu
 $ ./make_iso.sh  -h
 
 make_iso.sh
-  -i      <file> input.iso
-  -o      <file> output.iso
-  --chroot This option gives a root shell in the ISO to make modifications. Things you can
-           do is adding, removing packages with apt-get. Note this part will run with sudo.
-  --help,-h     This help
+  -i           <file> input.iso
+  -o           <file> output.iso
+  --update,-u  Update the packages.
+  --chroot,-c  This option gives a root shell in the ISO to make modifications. Things you can
+               do is adding, removing packages with apt-get.
+  --version,-v Show version
+  --help,-h    This help
 
 Create a new ISO with preseed embedded
 Examples:
-  ./make_iso.sh -i linuxmint-22.2-cinnamon-64bit.iso -o linuxmint-22.2-cinnamon-64bit_preseeded.iso
-
+  ./make_iso.sh -i linuxmint.iso -o linuxmint_preseeded.iso
+  ./make_iso.sh -i linuxmint.iso -o linuxmint_updated.iso --update
 ```
 
 ```
