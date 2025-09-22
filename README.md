@@ -35,7 +35,7 @@ To get started, follow these steps:
      # lsblk # (find <X>)
      # sudo umount /dev/sd<X> or /dev/sd1<X>
      # sudo dd if=linuxmint-22.2-cinnamon-64bit_preseeded.iso of=/dev/sd<X> oflag=direct bs=4M status=progress
-# install the server 
+# Install the server 
    sudo ./install.sh --iso linuxmint-22.2-cinnamon-64bit_preseeded.iso
 
  3. **Network Setup**:
@@ -118,7 +118,8 @@ Examples:
 ```
 
 ## Update
-To update the ISO, download a new one and repeat the installation. For multiple ISOs, place each in a separate folder under `/srv/nfs` (e.g., `/srv/nfs/mint` and `/srv/nfs/ubuntu`) and edit the iPXE menu at `/var/www/html/menu`.
+To update the packages in the ISO run make_iso.sh --update and repeat install.sh
+For multiple ISOs, place each in a separate folder under `/srv/nfs` (e.g., `/srv/nfs/mint` and `/srv/nfs/ubuntu`) and edit the iPXE menu at `/var/www/html/menu`.
 The iPXE menu already has an entry for 32-bit Mint installation (lmde). The lmde ISO of Mint cannot be preseeded so it will always start as Live. To install:
 ```
 sudo ./install.sh --iso32 lmde-6-cinnamon-32bit.iso
@@ -129,9 +130,9 @@ Both EFI and BIOS boot options are supported, but EFI boot tends to be a bit slo
 ## Internet access
 The 192.168.5.1/24 network does not provide internet unless specifically enabled.
 This is done such that the Mint installation can be done from repair cafe locations that do not have unlimited internet access.<br/>
-There is one exception and that is http://191.168.1.5 .<br/>
-You can store a copy of a website under /var/www/html to create a working site at 
-for instance "http://191.168.1.5/Linux_Repair_Café_geeft_laptops_een_langer_leven.html"
+Simple static websites can be served from http://191.168.1.5 .<br/>
+A copy of a website placed under /var/www/html gives a working site at 
+for instance "http://191.168.1.5/Linux_Repair_Café_geeft_laptops_een_langer_leven.html".
 ### Enabling internet
 The --nat option can be given to enable a nat network. Only enable if you have internet as otherwise installation will be slow.
 ## Uninstall
@@ -140,4 +141,4 @@ In case you get stuck you can uninstall :
    sudo ./uninstall.sh
 ```
 ## Wiki
-See https://github.com/tband/linux-employ/wiki for even more details.
+See https://github.com/tband/linux-employ/wiki for more details.
