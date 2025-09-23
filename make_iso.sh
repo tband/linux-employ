@@ -60,10 +60,12 @@ if [[ -z $ISO_OUT ]] then
   ISO_OUT=$(basename $ISO_OUT)
 fi
 
+[ -r $ISO_OUT ] && echo "ERROR: target $ISO_OUT already exists" && exit 1
+
 ISO_IN_NAME=$(basename ${ISO_IN%.*})
 # iso name must be <= 32 characters
 ISO_IN_NAME=${ISO_IN_NAME:0:32}
-TMPFS_SIZE=$(df /dev/shm|awk '/tmpfs/ {print $4}')
+TMPFS_SIZE=$(df --output=avail /dev/shm|tail -1)
 ISO_DIR=/tmp/iso
 # If more than 6G ava
 ISO_SIZE=$(stat -L --format=%s $ISO_IN)
@@ -110,10 +112,20 @@ then
   kernel /casper/vmlinuz
   append  DEBCONF_DEBUG=5 file=/cdrom/preseed/seed/linuxmint_custom.seed oem-config/enable=true boot=casper initrd=/casper/initrd.lz -- auto noprompt automatic-ubiquity
 "
-awk -vunattendedOEM="$unattendedOEM" '/label oem/ {print unattendedOEM} ; {print}' $ISO_FILES/isolinux/live.cfg > $ISO_FILES/isolinux/live.cfg_new
-mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
+  awk -vunattendedOEM="$unattendedOEM" '/label oem/ {print unattendedOEM} ; {print}' $ISO_FILES/isolinux/live.cfg > $ISO_FILES/isolinux/live.cfg_new
+  mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
 
   cp misc/splash.png $ISO_FILES/isolinux/
+  # Don't remove nl, en, de, fr, es language packs
+  cp casper/filesystem.manifest-remove $ISO_FILES/casper
+
+#language packages not to be removed, created like this:
+#  for i in -nl -de -es -fr -gb -en
+#  do
+#    sed -i "/$i\$/d" $ISO_FILES/casper/filesystem.manifest-remove
+#    sed -i "/$i-/d" $ISO_FILES/casper/filesystem.manifest-remove
+#  done
+
 fi
 
 
