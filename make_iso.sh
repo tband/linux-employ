@@ -98,6 +98,10 @@ if ! grep -q "Repair Cafe" $ISO_FILES/boot/grub/grub.cfg
 then
   INITRD=$(awk '/initrd/ {print $2;exit}' $ISO_FILES/boot/grub/grub.cfg)
   # $ISO_FILES/boot/grub/grub.cfg
+  splash="insmod png
+background_image -m stretch /boot/grub/splash.png"
+  awk -vsplash="$splash" '/set color_normal/ {print splash} ; {print}' $ISO_FILES/boot/grub/grub.cfg > $ISO_FILES/boot/grub/grub.cfg_new
+  mv $ISO_FILES/boot/grub/grub.cfg_new $ISO_FILES/boot/grub/grub.cfg
   unattendedOEM="menuentry \"Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten\" --class linuxmint {
 	linux	/casper/vmlinuz file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper -- auto noprompt automatic-ubiquity
 	initrd	${INITRD}
@@ -116,6 +120,8 @@ then
   mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
 
   cp misc/splash.png $ISO_FILES/isolinux/
+  cp misc/splash.png $ISO_FILES/boot/grub/
+
   # Don't remove nl, en, de, fr, es language packs
   cp casper/filesystem.manifest-remove $ISO_FILES/casper
 
