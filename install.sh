@@ -217,6 +217,11 @@ function enable_nat () {
   iptables -A OUTPUT -j ACCEPT
 }
 
+# Check if IP starts with numerical
+if ! echo $IPADDRESS|grep -q -E '^[1:9]' ; then
+  echo "ERROR: IP=$IPADDRESS (-n option) should start with numerical"
+  exit 1
+fi
 
 if [ ! -z $ISO32 ]
 then
@@ -295,3 +300,5 @@ mount -a
 
 # Create IPXE menu
 make_menu
+# Add preseed for URL inclusion
+cp preseed/seed/linuxmint_custom*.seed /var/www/html
