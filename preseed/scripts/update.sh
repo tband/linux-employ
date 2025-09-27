@@ -6,6 +6,6 @@ PATH=$PATH:/usr/sbin
 ufw --force enable 2> /dev/null
 ufw default deny incoming
 apt-get update
-apt-get install wdutch cheese
+apt-get --yes install wdutch cheese
 apt-get --yes upgrade
 apt-get clean
