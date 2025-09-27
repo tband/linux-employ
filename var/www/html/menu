@@ -18,6 +18,7 @@ menu Linux repair cafe boot options
 item --key l mint-live        Start __DESCRIPTION__
 item         mint-live_compat Start __DESCRIPTION__ (compatibility mode)
 item --key i mint-install     Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
+item         mint-install_DiskQuestion Repair Cafe automated OEM install, One question: Setup disk
 item
 item menu-install32 32-bit (old computers)
 item
@@ -32,7 +33,6 @@ choose selected && goto ${selected} || void
 menu Linux repair cafe boot options 32-bit
 item --key l mint-live32        Start __DESCRIPTION__
 item --key c mint-live_compat32 Start __DESCRIPTION__ (compatibility mode)
-item --key i mint-install32     Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten
 item
 item  back Back
 choose selected && goto ${selected} || void
@@ -59,18 +59,25 @@ initrd ${mint_initrd}
 imgargs vmlinuz ${mint_args} noapic noacpi nosplash irqpoll nomodeset
 boot
 
+:mint-live_compat32
+echo Start __DESCRIPTION__ (compatibility mode)
+kernel ${mint_kernel32}
+initrd ${mint_initrd32}
+imgargs vmlinuz ${mint_args32} noapic noacpi nosplash irqpoll nomodeset
+boot
+
 :mint-install
 echo Install __DESCRIPTION__
 kernel ${mint_kernel}
 initrd ${mint_initrd}
-imgargs vmlinuz ${mint_args} -- file=/cdrom/preseed/seed/linuxmint_custom.seed auto noprompt automatic-ubiquity
+imgargs vmlinuz ${mint_args} -- auto-install/enable url=http://${server_ip}/linuxmint_custom.seed interface=auto netcfg/dhcp_timeout=60 auto noprompt automatic-ubiquity
 boot
 
-:mint-install32
+:mint-install_DiskQuestion
 echo Install __DESCRIPTION__
-kernel ${mint_kernel32}
-initrd ${mint_initrd32}
-imgargs vmlinuz ${mint_args32} -- file=/cdrom/preseed/seed/linuxmint_custom.seed auto noprompt automatic-ubiquity
+kernel ${mint_kernel}
+initrd ${mint_initrd}
+imgargs vmlinuz ${mint_args} -- auto-install/enable url=http://${server_ip}/linuxmint_custom_nodisk.seed interface=auto netcfg/dhcp_timeout=60 auto noprompt automatic-ubiquity
 boot
 
 :netboot.xyz
