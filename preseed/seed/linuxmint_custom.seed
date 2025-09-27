@@ -1,6 +1,9 @@
 # Helpfull debian example preseed: https://www.debian.org/releases/bookworm/example-preseed.txt
-
-
+# See also:
+#  https://wiki.ubuntu.com/UbiquityAutomation
+#  https://www.debian.org/releases/stable/amd64/apb.en.html
+#  https://github.com/Pauchu/linux-mint-20-preseeding/blob/main/preseedSATA.cfg
+#
 ### POST INSTALL ##############################################################
 
 # NOTE: Ubiquity uses a subset of the commands from debian installer and silently ignores
@@ -22,15 +25,13 @@ ubiquity ubiquity/success_command string \
 ubiquity ubiquity/use_nonfree true
 
 # Don't ask questions
-d-i debconf/frontend select Noninteractive
 d-i debconf/priority select critical
 
 # Shutdown when done
 ubiquity ubiquity/poweroff boolean true
 
 
-### OEM #######################################################################
-d-i ubiquity/summary note
+### Temporary user ############################################################
 
 # Set temporary oem account, will be removed later.
 d-i oem-config/enable boolean true
@@ -42,59 +43,20 @@ d-i user-setup/allow-password-weak boolean true
 
 
 ### LOCALIZATION ##############################################################
-#d-i debian-installer/locale string en_GB.UTF-8
+#d-i debian-installer/locale string en_US.UTF-8
 d-i debian-installer/locale string nl_NL.UTF-8
 
 # Keyboard selection.
 d-i keyboard-configuration/layoutcode string us
 d-i keyboard-configuration/xkb-keymap select us
-d-i keyboard-configuration/variantcode string
 
 # Clock and time zone setup
-d-i clock-setup/utc boolean true
 d-i time/zone string Europe/Amsterdam
-d-i clock-setup/ntp boolean true
-d-i clock-setup/ntp-server string time.server.com
-
-## APT mirror settings
-d-i apt-setup/use_mirror boolean true
-d-i mirror/country string NL
-d-i mirror/http/mirror select ftp.snt.utwente.nl/pub/os/linux/ubuntu
-#d-i mirror/http/proxy string
-
-### NETWORK ###################################################################
-# Enable networking
-d-i netcfg/enable boolean false
 
 ### PARTITIONING ##############################################################
-# atomic: all files in one partition
-d-i partman-auto/choose_recipe  select atomic
-d-i partman/default_filesystem  string ext4
-d-i partman-auto/init_automatically_partition select biggest_free
-# default is first disk
-
-# https://github.com/linuxmint/ubiquity/blob/master/d-i/source/grub-installer/debian/grub-installer.templates
-# empty string=don't install bootloader
-d-i grub-installer/bootdev  string default
-#d-i grub-installer/bootdev  string /dev/sda
-#d-i grub-installer/bootdev  string
-
 # regular partition layout
 ubiquity partman-auto/method string regular
-
-# Don't warn about stuff
-ubiquity partman-lvm/device_remove_lvm boolean true
-ubiquity partman-md/device_remove_md boolean true
-ubiquity partman-md/confirm boolean true
-ubiquity partman-partitioning/confirm_write_new_label boolean true
+# default is first disk
+d-i partman-auto/init_automatically_partition select biggest_free
 ubiquity partman/choose_partition select finish
 ubiquity partman/confirm boolean true
-ubiquity partman/confirm_nooverwrite boolean true
-
-# This is fairly safe to set, it makes grub install automatically to the MBR
-# if no other operating system is detected on the machine.
-d-i grub-installer/only_debian boolean true
-
-# This one makes grub-installer install to the MBR if it also finds some other
-# OS, which is less safe as it might not be able to boot that other OS.
-#d-i grub-installer/with_other_os boolean true
