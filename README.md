@@ -119,8 +119,10 @@ Examples:
 
 ## Update
 To update the packages in the ISO run make_iso.sh --update and repeat install.sh
+You can use a previously generated ISO as input to only update the packages or start from the original Mint installation ISO.
+
 For multiple ISOs, place each in a separate folder under `/srv/nfs` (e.g., `/srv/nfs/mint` and `/srv/nfs/ubuntu`) and edit the iPXE menu at `/var/www/html/menu`.
-The iPXE menu already has an entry for 32-bit Mint installation (lmde). The lmde ISO of Mint cannot be preseeded so it will always start as Live. To install:
+The iPXE menu already has an entry for 32-bit Mint installation (lmde). The lmde ISO of Mint cannot be preseeded so it will always start as Live. To add:
 ```
 sudo ./install.sh --iso32 lmde-6-cinnamon-32bit.iso
 ```
