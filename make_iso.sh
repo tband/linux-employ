@@ -55,7 +55,7 @@ if [[ ! -r $ISO_IN ]] then
 fi
 
 if [[ -z $ISO_OUT ]] then
-  ISO_OUT=${ISO_IN%.*}_modified.iso
+  ISO_OUT=${ISO_IN%.*}-$(date +%F).iso
   echo -e "Output ISO=$ISO_OUT"
   ISO_OUT=$(basename $ISO_OUT)
 fi
@@ -98,12 +98,17 @@ if ! grep -q "Repair Cafe" $ISO_FILES/boot/grub/grub.cfg
 then
   INITRD=$(awk '/initrd/ {print $2;exit}' $ISO_FILES/boot/grub/grub.cfg)
   # $ISO_FILES/boot/grub/grub.cfg
-  splash="insmod png
+  splash="insmod png jpg all_video
 background_image -m stretch /boot/grub/splash.png"
   awk -vsplash="$splash" '/set color_normal/ {print splash} ; {print}' $ISO_FILES/boot/grub/grub.cfg > $ISO_FILES/boot/grub/grub.cfg_new
   mv $ISO_FILES/boot/grub/grub.cfg_new $ISO_FILES/boot/grub/grub.cfg
-  unattendedOEM="menuentry \"Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten\" --class linuxmint {
+  unattendedOEM=\
+"menuentry \"Repair Cafe OEM install, NO QUESTIONS - disk overwritten\" --class linuxmint {
 	linux	/casper/vmlinuz file=/cdrom/preseed/seed/linuxmint_custom.seed boot=casper -- auto noprompt automatic-ubiquity
+	initrd	${INITRD}
+}
+menuentry \"Repair Cafe OEM install, One question: Setup disk\" --class linuxmint {
+	linux	/casper/vmlinuz file=/cdrom/preseed/seed/linuxmint_custom_nodisk.seed boot=casper -- auto noprompt automatic-ubiquity
 	initrd	${INITRD}
 }
 "
@@ -111,10 +116,15 @@ background_image -m stretch /boot/grub/splash.png"
   mv $ISO_FILES/boot/grub/grub.cfg_new $ISO_FILES/boot/grub/grub.cfg
 
   #  $ISO_FILES/isolinux/live.cfg
-  unattendedOEM="label unattendedOEM
+  unattendedOEM="\
+label unattendedOEM
   menu label Repair Cafe OEM install, NO Questions - disk overwritten
   kernel /casper/vmlinuz
   append  DEBCONF_DEBUG=5 file=/cdrom/preseed/seed/linuxmint_custom.seed oem-config/enable=true boot=casper initrd=/casper/initrd.lz -- auto noprompt automatic-ubiquity
+label unattendedOEMnodisk
+  menu label Repair Cafe OEM install, One question: Setup disk
+  kernel /casper/vmlinuz
+  append  DEBCONF_DEBUG=5 file=/cdrom/preseed/seed/linuxmint_custom_nodisk.seed oem-config/enable=true boot=casper initrd=/casper/initrd.lz -- auto noprompt automatic-ubiquity
 "
   awk -vunattendedOEM="$unattendedOEM" '/label oem/ {print unattendedOEM} ; {print}' $ISO_FILES/isolinux/live.cfg > $ISO_FILES/isolinux/live.cfg_new
   mv $ISO_FILES/isolinux/live.cfg_new $ISO_FILES/isolinux/live.cfg
