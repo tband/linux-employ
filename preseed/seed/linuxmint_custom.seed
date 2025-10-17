@@ -60,3 +60,4 @@ ubiquity partman-auto/method string regular
 d-i partman-auto/init_automatically_partition select biggest_free
 ubiquity partman/choose_partition select finish
 ubiquity partman/confirm boolean true
+ubiquity partman/confirm_nooverwrite boolean true
