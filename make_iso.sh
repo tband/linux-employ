@@ -55,7 +55,11 @@ if [[ ! -r $ISO_IN ]] then
 fi
 
 if [[ -z $ISO_OUT ]] then
-  ISO_OUT=${ISO_IN%.*}-$(date +%F).iso
+  # remove the extension
+  ISO_OUT=${ISO_IN%.*}
+  # remove the date if the standard format yyyy-mm-dd is used
+  ISO_OUT=${ISO_OUT%-[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]}
+  ISO_OUT=${ISO_OUT}-$(date +%F).iso
   echo -e "Output ISO=$ISO_OUT"
   ISO_OUT=$(basename $ISO_OUT)
 fi
