@@ -10,6 +10,7 @@ ${prog_name}
   --update,-u  Update the packages.
   --chroot,-c  This option gives a root shell in the ISO to make modifications. Things you can
                do is adding, removing packages with apt-get.
+  --winboat,-w Install winboat to run Window applications
   --version,-v Show version
   --help,-h    This help
 
@@ -20,7 +21,7 @@ Examples:
 "
 
 # Parse long options
-OPTIONS=$(getopt -o i:o:cudvhH --long chroot,update,version,debug -- "$@")
+OPTIONS=$(getopt -o i:o:cuwdvhH --long chroot,update,winboat,debug -- "$@")
 
 # Check if getopt returned an error
 if [ $? -ne 0 ]; then
@@ -30,7 +31,7 @@ fi
 eval set -- "$OPTIONS"
 
 # Initialize variables
-unset UNSQUASH CHROOT DEBUG UPDATE
+unset UNSQUASH CHROOT DEBUG UPDATE WINBOAT
 while true; do
   case "$1" in
     -i) ISO_IN="$2"; shift 2;;
@@ -38,6 +39,7 @@ while true; do
     -h|--help) echo "$help"; exit 1;;
     -c|--chroot) UNSQUASH=1; CHROOT=1;shift 1;;
     -u|--update) UNSQUASH=1; UPDATE=1;shift 1;;
+    -w|--winboat) UNSQUASH=1; WINBOAT=1;shift 1;;
     -v|--version)echo Linux-employ version $VERSION; exit 0;;
     -d|--debug) DEBUG=1;shift 1;;
     --) shift; break;;
@@ -166,11 +168,16 @@ then
     sudo cp preseed/scripts/update.sh $ISO_DIR/squashfs/tmp
     sudo chroot $ISO_DIR/squashfs /tmp/update.sh
   fi
+  if [ ! -z $WINBOAT ]
+  then
+    sudo cp preseed/scripts/winboat_install.sh $ISO_DIR/squashfs/tmp
+    sudo chroot $ISO_DIR/squashfs /tmp/winboat_install.sh
+  fi
   if [ ! -z $CHROOT ]
   then
     echo ""
     echo "Entering chroot environment of $ISO_IN_NAME"
-    echo "Please make modification as needed and continue with 'exit'"
+    echo "Please make modifications as needed and continue with 'exit'"
     sudo chroot $ISO_DIR/squashfs
   fi
   sudo mv $ISO_DIR/squashfs/etc/resolv.conf.org $ISO_DIR/squashfs/etc/resolv.conf
@@ -219,7 +226,7 @@ echo "$ISO_OUT has been created"
 ls -l $ISO_OUT ${ISO_OUT%.*}.sha256sum
 
 echo
-echo "To make a bootable pendrive:"
+echo "To make a bootable pendrive, insert it now"
 echo "list block devices and umount if auto mounted"
 echo " lsblk # (find <X>)"
 echo " sudo umount /dev/sd<X> or /dev/sd1<X>"
