@@ -50,8 +50,8 @@ location or the Cubic project directory.
   
 Examples:
   sudo ./${prog_name} -d $DEVICE -i linuxmint.iso -c \"Linux Mint\"
-  sudo ./${prog_name} -nat wlp2s0
-  sudo ./${prog_name} -nonat
+  sudo ./${prog_name} --nat wlp2s0
+  sudo ./${prog_name} --nonat
 "
 
 if [ $# == 0 ]; then
@@ -108,7 +108,12 @@ done
 function remove_mint_mount () {
     umount -l /srv/nfs/mint 2>/dev/null
     mkdir -p /srv/nfs/mint
-    sed -i '/\/srv\/nfs\/mint/d' /etc/fstab
+    sed -i '/\/srv\/nfs\/mint\s/d' /etc/fstab
+}
+function remove_mint32_mount () {
+    umount -l /srv/nfs/mint32 2>/dev/null
+    mkdir -p /srv/nfs/mint32
+    sed -i '/\/srv\/nfs\/mint32\s/d' /etc/fstab
 }
 
 function source_cubic () {
@@ -141,9 +146,7 @@ function source_iso_ro32 () {
       exit 1
     fi
     # Remove existing mount point from previous install
-    umount -l /srv/nfs/mint32 2>/dev/null
-    mkdir -p /srv/nfs/mint32
-    sed -i '/\/srv\/nfs\/mint32/d' /etc/fstab
+    remove_mint32_mount
     echo "$ISO32   /srv/nfs/mint32    auto  x-systemd.requires=/,ro    0  0" >> /etc/fstab
 }
 
@@ -183,6 +186,9 @@ function install_packages () {
   # optionally
   apt install -y openssh-server iptables iptables-persistent net-tools vim
 
+}
+
+function create_bridge () {
   # A bridge allows the dhcp server to start up
 
   # Make bridge br0
@@ -229,7 +235,6 @@ then
   source_iso_ro32
 fi
 
-ISO=$(readlink -f $ISO)
 if [[ ! -z $CUBIC  && -d "$CUBIC" ]] then
   if [[ -r $ISO ]] then
     echo -e "ERROR: Either specify an ISO or a CUBIC project folder, not both"
@@ -247,9 +252,14 @@ function make_menu () {
   sed -i "s%__INITRD__%${INITRD}%g" /var/www/html/menu
 }
 
+if [[ -r $ISO ]] then
+  ISO=$(readlink -f $ISO)
+fi
+
 if [[ -d "$CUBIC" || -r $ISO ]] then
   check_adapters
   install_packages
+  create_bridge
   # tftp config is ok, just add the data
   # see also https://ipxe.org/howto/chainloading
   # note that this version has NFS support added, so don't download directly from ipxe.org
