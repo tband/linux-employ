@@ -182,7 +182,9 @@ function install_packages () {
   # update the repo first
   apt-get update
   # install packages
-  apt install -y isc-dhcp-server tftpd-hpa apache2 nfs-kernel-server bridge-utils libarchive-tools
+  apt install -y tftpd-hpa apache2 nfs-kernel-server bridge-utils libarchive-tools
+  # This one spits out an error message, so ignore standard output as we don't want to see errors
+  apt install -y isc-dhcp-server > /dev/null
   # optionally
   apt install -y openssh-server iptables iptables-persistent net-tools vim
 
@@ -252,8 +254,13 @@ function make_menu () {
   sed -i "s%__INITRD__%${INITRD}%g" /var/www/html/menu
 }
 
-if [[ -r $ISO ]] then
-  ISO=$(readlink -f $ISO)
+if [[ ! -z $ISO ]] then
+  if [[ -r $ISO ]] then
+    ISO=$(readlink -f $ISO)
+  else
+    echo -e "ERROR: can read input iso $ISO"
+    exit 1
+  fi
 fi
 
 if [[ -d "$CUBIC" || -r $ISO ]] then
@@ -286,6 +293,8 @@ fi
 NET=${IPADDRESS%\.*} # 192.168.5
 [ -r /etc/dhcp/dhcpd.conf.org ] || mv /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf.org
 sed "s/__NET__/${NET}/g" etc/dhcp/dhcpd.conf > /etc/dhcp/dhcpd.conf
+[ -r /etc/default/isc-dhcp-server.org ] || mv /etc/default/isc-dhcp-server /etc/default/isc-dhcp-server.org
+cp etc/default/isc-dhcp-server /etc/default/isc-dhcp-server
 
 # NAT?
 if [ ! -z $NAT_DEVICE ]; then
@@ -303,7 +312,7 @@ fi
 # Restart the services
 exportfs -rva
 systemctl daemon-reload
-systemctl disable isc-dhcp-server6.service
+systemctl disable isc-dhcp-server6.service 2> /dev/null # Debian does not have this package
 systemctl restart isc-dhcp-server.service
 systemctl restart nfs-server
 mount -a
