@@ -50,6 +50,7 @@ done
 # All commands available?
 command -v xorriso > /dev/null || sudo apt-get -y install xorriso isolinux
 command -v bsdtar  > /dev/null || sudo apt-get -y install libarchive-tools
+command -v mksquashfs  > /dev/null || sudo apt-get -y install squashfs-tools
 
 if [[ ! -r $ISO_IN ]] then
   echo -e "ERROR: cannot read $ISO_IN from -i argument"
