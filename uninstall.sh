@@ -7,6 +7,7 @@ rm -f /etc/dhcp/dhcpd.conf* /etc/default/isc-dhcp-server*
 rm -rf /var/www
 rm /etc/exports
 umount -l /srv/nfs/mint
+umount -l /srv/nfs/mint32
 rm -rf /srv/
 sed -i '/\/srv\/nfs/d' /etc/fstab
 apt install -y ufw
