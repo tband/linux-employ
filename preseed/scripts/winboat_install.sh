@@ -17,7 +17,7 @@ EOF
 apt update
 apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin freerdp3-x11
 
-WB_URL="https://github.com/TibixDev/winboat/releases/download/v0.8.7/winboat-0.8.7-amd64.deb"
+WB_URL="https://github.com/TibixDev/winboat/releases/download/v0.9.0/winboat-0.9.0-amd64.deb"
 WINBOAT_DEB=$(basename $WB_URL)
 curl -fsSL $WB_URL -o /tmp/${WINBOAT_DEB}
 dpkg -i /tmp/${WINBOAT_DEB}
