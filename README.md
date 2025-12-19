@@ -19,7 +19,7 @@ To get started, follow these steps:
    - A **Debian-based Linux** distribution (Debian or Mint recommended).
 
 2. **Installation Steps**:
-   - Log in to your server and run the following commands (internet access required):
+   - Run the following commands to create an installation image in iso format (internet access required):
    ```bash
    git clone https://github.com/tband/linux-employ.git 
    cd linux-employ/
@@ -35,8 +35,11 @@ To get started, follow these steps:
      # lsblk # (find <X>)
      # sudo umount /dev/sd<X> or /dev/sd1<X>
      # sudo dd if=linuxmint-22.2-cinnamon-64bit_preseeded.iso of=/dev/sd<X> oflag=direct bs=4M status=progress
-# Install the server 
+   ```
+   - Install and configure all the server components
+   ```bash
    sudo ./install.sh --iso linuxmint-22.2-cinnamon-64bit_preseeded.iso
+   ```
 
  3. **Network Setup**:
     - Connect the Ethernet port to a switch with enough ports.
@@ -47,7 +50,7 @@ To get started, follow these steps:
 ## iPXE Boot menu
 The iPXE boot menu is prepared for a Live ISO of Mint.
 
-- After installation, customize the boot menu at /var/www/html/menu
+- After installation, the menu is present at /var/www/html/menu where is can be customized:
 
 <img width="716" height="393" alt="image" src="https://github.com/user-attachments/assets/f71b35d7-f888-4ce6-a781-b7daf4e78493" />
 
@@ -60,7 +63,7 @@ The chosen entry is loaded from an NFS share (nfs:/srv/nfs) which the client mou
 If the "Repair Cafe automated OEM install, NO QUESTIONS - disk overwritten" menu item is chosen, the preseed questions are loaded from /srv/nfs/mint/preseed/seed/linuxmint_custom.seed (/cdrom/preseed/seed/linuxmint_custom.seed) and installation proceeds without having to answer any question.
 ### commandline help
 ```
-$ ./make_iso.sh  -h
+$ ./make_iso.sh -h
 
 make_iso.sh
   -i           <file> input.iso
@@ -68,6 +71,7 @@ make_iso.sh
   --update,-u  Update the packages.
   --chroot,-c  This option gives a root shell in the ISO to make modifications. Things you can
                do is adding, removing packages with apt-get.
+  --winboat,-w Install winboat to run Window applications
   --version,-v Show version
   --help,-h    This help
 
@@ -136,7 +140,7 @@ Simple static websites can be served from http://191.168.1.5 .<br/>
 A copy of a website placed under /var/www/html gives a working site at 
 for instance "http://191.168.1.5/Linux_Repair_Café_geeft_laptops_een_langer_leven.html".
 ### Enabling internet
-The --nat option can be given to enable a nat network. Only enable if you have internet as otherwise installation will be slow.
+The --nat option can be added to the install.sh script to enable a nat network. Only enable if you have internet as otherwise installation will be slow.
 ## Uninstall
 In case you get stuck you can uninstall :
 ```
