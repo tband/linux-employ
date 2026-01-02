@@ -11,6 +11,7 @@ ${prog_name}
   --chroot,-c  This option gives a root shell in the ISO to make modifications. Things you can
                do is adding, removing packages with apt-get.
   --winboat,-w Install winboat to run Window applications
+  --signal,-s  Install signal desktop
   --version,-v Show version
   --help,-h    This help
 
@@ -21,7 +22,7 @@ Examples:
 "
 
 # Parse long options
-OPTIONS=$(getopt -o i:o:cuwdvhH --long chroot,update,winboat,debug -- "$@")
+OPTIONS=$(getopt -o i:o:cuwsdvhH --long chroot,update,winboat,signal,debug -- "$@")
 
 # Check if getopt returned an error
 if [ $? -ne 0 ]; then
@@ -40,6 +41,7 @@ while true; do
     -c|--chroot) UNSQUASH=1; CHROOT=1;shift 1;;
     -u|--update) UNSQUASH=1; UPDATE=1;shift 1;;
     -w|--winboat) UNSQUASH=1; WINBOAT=1;shift 1;;
+    -s|--signal) UNSQUASH=1; SIGNAL=1;shift 1;;
     -v|--version)echo Linux-employ version $VERSION; exit 0;;
     -d|--debug) DEBUG=1;shift 1;;
     --) shift; break;;
@@ -173,6 +175,11 @@ then
   then
     sudo cp preseed/scripts/winboat_install.sh $ISO_DIR/squashfs/tmp
     sudo chroot $ISO_DIR/squashfs /tmp/winboat_install.sh
+  fi
+  if [ ! -z $SIGNAL ]
+  then
+    sudo cp preseed/scripts/signal_install.sh $ISO_DIR/squashfs/tmp
+    sudo chroot $ISO_DIR/squashfs /tmp/signal_install.sh
   fi
   if [ ! -z $CHROOT ]
   then
