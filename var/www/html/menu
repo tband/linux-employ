@@ -31,8 +31,8 @@ choose selected && goto ${selected} || void
 
 :menu-install32
 menu Linux repair cafe boot options 32-bit
-item --key l mint-live32        Start __DESCRIPTION__
-item --key c mint-live_compat32 Start __DESCRIPTION__ (compatibility mode)
+item --key l mint-live32        Start 32 bit LMDE
+item --key c mint-live_compat32 Start 32 bit LMDE (compatibility mode)
 item
 item  back Back
 choose selected && goto ${selected} || void
